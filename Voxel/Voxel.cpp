@@ -5,6 +5,8 @@
 #include "Voxel.h"
 #include <d3d11.h>
 #pragma comment(lib, "d3d11.lib")
+#include "Renderer.h"
+#include "ErrorLogger.h"
 
 #define MAX_LOADSTRING 100
 
@@ -16,6 +18,7 @@ ID3D11Device* gDevice = nullptr;
 ID3D11DeviceContext* gContext = nullptr;
 IDXGISwapChain* gSwapChain = nullptr;
 ID3D11RenderTargetView* gRenderTargetView = nullptr;
+Renderer renderer;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -86,9 +89,15 @@ bool InitD3D(HWND hWnd)
 
     // Get back buffer and create render target view
     ID3D11Texture2D* backBuffer = nullptr;
-    gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+    hr = gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+    if (FAILED(hr) || !backBuffer)
+    {
+        MessageBox(nullptr, L"Failed to get back buffer", L"Error", MB_OK);
+        return false; // or handle error appropriately
+    }
     gDevice->CreateRenderTargetView(backBuffer, nullptr, &gRenderTargetView);
     backBuffer->Release();
+
 
     gContext->OMSetRenderTargets(1, &gRenderTargetView, nullptr);
 
@@ -101,6 +110,13 @@ bool InitD3D(HWND hWnd)
     viewport.MinDepth = 0.0f;
     viewport.MaxDepth = 1.0f;
     gContext->RSSetViewports(1, &viewport);
+
+
+    // Initialize the Renderer
+    if (!renderer.Initialize(gDevice, gContext)) {
+        MessageBox(nullptr, L"Renderer initialization failed", L"Error", MB_OK);
+        return false;  // If the Renderer initialization fails, return false
+    }
 
     return true;
 }
@@ -149,7 +165,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
+   if (!InitD3D(hWnd)) return FALSE;
    if (!hWnd)
    {
       return FALSE;
@@ -194,14 +210,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_PAINT:
         {
+        D3D11_RASTERIZER_DESC rasterDesc = {};
+        rasterDesc.FillMode = D3D11_FILL_SOLID;
+        rasterDesc.CullMode = D3D11_CULL_BACK;
+        rasterDesc.FrontCounterClockwise = true;
+
+        ID3D11RasterizerState* rasterState = nullptr;
+        gDevice->CreateRasterizerState(&rasterDesc, &rasterState);
+        gContext->RSSetState(rasterState);
+
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            
+
+            // Call Renderer
+            renderer.Render();
+
+            gSwapChain->Present(1, 0);
             EndPaint(hWnd, &ps);
         }
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
+        renderer.Cleanup();
+        if (gRenderTargetView) gRenderTargetView->Release();
+        if (gSwapChain) gSwapChain->Release();
+        if (gContext) gContext->Release();
+        if (gDevice) gDevice->Release();
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
