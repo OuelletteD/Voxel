@@ -1,98 +1,73 @@
 #include "Renderer.h"
+#include <iostream>
 #include "string"
 #include "Debugger.h"
 
-bool Renderer::Initialize(ID3D11Device* device, ID3D11DeviceContext* context) {
-	gDevice = device;
-	gContext = context;
-
-	D3D11_BUFFER_DESC cbd = {};
-	cbd.Usage = D3D11_USAGE_DEFAULT;
-	cbd.ByteWidth = sizeof(DirectX::XMMATRIX);
-	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-
-	HRESULT hr = gDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
-	if (FAILED(hr)) return false;
-
-
-	//load shaders
-	if (!shader.Initialize(device, L"vertexShader.hlsl", L"pixelShader.hlsl")) {
-		MessageBox(nullptr, L"Shader init failed", L"Error", MB_OK);
+bool Renderer::Initialize() {
+	// Initialize shaders
+	if (!shader.Initialize("VertexShader.glsl", "FragmentShader.glsl")) {
+		std::cerr << "Failed to initialize shaders!" << std::endl;
 		return false;
 	}
-
-	// Initialize cube mesh
 	Vertex vertices[] = {
-		// back face
-		{ { -1.0f, -1.0f,  0.5f }, {1, 0, 0, 1}}, // 0 - Red
-		{ {  1.0f, -1.0f,  0.5f }, {0, 1, 0, 1}}, // 1 - Green
-		{ {  1.0f,  1.0f,  0.5f }, {0, 0, 1, 1}}, // 2 - Blue
-		{ { -1.0f,  1.0f,  0.5f }, {1, 1, 0, 1}}, // 3 - Yellow
+		// Positions            // Colors
+		{{-0.5f, -0.5f, -0.5f}, {0.55f, 0.27f, 0.07f, 1.0f}},  // Bottom-left-front (dirt brown)
+		{{ 0.5f, -0.5f, -0.5f}, {0.55f, 0.27f, 0.07f, 1.0f}},  // Bottom-right-front (dirt brown)
+		{{ 0.5f,  0.5f, -0.5f}, {0.55f, 0.27f, 0.07f, 1.0f}},  // Top-right-front (dirt brown)
+		{{-0.5f,  0.5f, -0.5f}, {0.55f, 0.27f, 0.07f, 1.0f}},  // Top-left-front (dirt brown)
 
-		{ { -1.0f, -1.0f, -0.5f }, {1, 0, 1, 1}}, // 4 - Magenta
-		{ {  1.0f, -1.0f, -0.5f }, {0, 1, 1, 1}}, // 5 - Cyan
-		{ {  1.0f,  1.0f, -0.5f }, {1, 0.5f, 0, 1}}, // 6 - Orange
-		{ { -1.0f,  1.0f, -0.5f }, {0.5f, 0, 1, 1}}, // 7 - Purple
+		{{-0.5f, -0.5f,  0.5f}, {0.55f, 0.27f, 0.07f, 1.0f}},  // Bottom-left-back (dirt brown)
+		{{ 0.5f, -0.5f,  0.5f}, {0.55f, 0.27f, 0.07f, 1.0f}},  // Bottom-right-back (dirt brown)
+		{{ 0.5f,  0.5f,  0.5f}, {0.49f, 0.99f, 0.0f, 1.0f}},  // Top-right-back (grass green)
+		{{-0.5f,  0.5f,  0.5f}, {0.49f, 0.99f, 0.0f, 1.0f}}   // Top-left-back (grass green)
 	};
 
 	unsigned short indices[] = {
-		// Front face (Z = 1)
-		4, 5, 6,
-		4, 6, 7,
-
-		// Back face (Z = 2)
-		0, 2, 1,
-		0, 3, 2,
-
-		// Left face (X = -1)
-		0, 3, 7,
-		0, 7, 4,
-
-		// Right face (X = +1)
-		1, 5, 6,
-		1, 6, 2,
-
-		// Top face (Y = +1)
-		3, 2, 6,
-		3, 6, 7,
-
-		// Bottom face (Y = -1)
-		0, 4, 5,
-		0, 5, 1
+		0, 1, 2, 2, 3, 0,  // Front face
+		4, 5, 6, 6, 7, 4,  // Back face
+		0, 1, 5, 5, 4, 0,  // Bottom face
+		2, 3, 7, 7, 6, 2,  // Top face
+		0, 3, 7, 7, 4, 0,  // Left face
+		1, 2, 6, 6, 5, 1   // Right face
 	};
 
-	if (!cubeMesh.Initialize(device, vertices, ARRAYSIZE(vertices), indices, ARRAYSIZE(indices))) return false;
+	if (!cubeMesh.Initialize(vertices, sizeof(vertices) / sizeof(Vertex), indices, sizeof(indices) / sizeof(short))) {
+		std::cerr << "Failed to initialize the cube mesh!" << std::endl;
+		return false;
+	}
 
+	// Initialize camera
+	camera.SetPosition(glm::vec3(2.0f, 3.0f, -2.0f));  // Set an initial camera position
+	// Create a uniform buffer object (UBO) for storing matrices (model, view, projection)
+	glGenBuffers(1, &constantBuffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, constantBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 3, NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	return true;
 }
 
 void Renderer::Render() {
-	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	gContext->ClearRenderTargetView(gRenderTargetView, clearColor);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // Clear the color and depth buffers
+	shader.Use();
+	// Update the camera and projection matrices
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 model = glm::mat4(1.0f);  // Identity matrix for the model (no transformation)
 
-	shader.SetShaders(gContext);
+	glBindBuffer(GL_UNIFORM_BUFFER, constantBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), glm::value_ptr(projection));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	// Set the MVP matrix and update constant buffer here
-	// Example: Use the camera to get matrices
-
-	DirectX::XMMATRIX view = camera.GetViewMatrix();
-	DirectX::XMMATRIX proj = camera.GetProjectionMatrix(800.0f / 600.0f);
-	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity(); // Default to Identity for now
-	DirectX::XMMATRIX mvp = view * proj * world;
-
-	// Update constant buffer with MVP matrix
-	gContext->UpdateSubresource(constantBuffer, 0, nullptr, &mvp, 0, 0);
-	gContext->VSSetConstantBuffers(0, 1, &constantBuffer); // Set the constant buffer to slot 0
-
-	//Render the cube
-	cubeMesh.Render(gContext);
-
-	// Swap buffers, etc.
+	// Bind the uniform buffer to the shader program
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, constantBuffer);
+	// Render the cube mesh
+	cubeMesh.Render();
 }
 
 void Renderer::Cleanup() {
-	shader.Cleanup();
 	cubeMesh.Cleanup();
-	if (constantBuffer) constantBuffer->Release();
+	glDeleteBuffers(1, &constantBuffer);
 }
 

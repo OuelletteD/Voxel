@@ -1,17 +1,16 @@
 #include "Camera.h"
 
-XMMATRIX Camera::GetViewMatrix() {
-    return XMMatrixLookAtLH(position, lookAt, up);
+glm::mat4 Camera::GetViewMatrix() const {
+    // Using glm::lookAt to create the view matrix (similar to DirectX's XMMatrixLookAtLH)
+    return glm::lookAt(position, lookAt, up);
 }
 
-XMMATRIX Camera::GetProjectionMatrix(float aspectRatio) {
-    return XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.1f, 10.0f);
+glm::mat4 Camera::GetProjectionMatrix(float aspectRatio) const {
+    // For perspective projection: 
+    // OpenGL uses glm::perspective (left-handed coordinate system)
+    return glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);  // Near and far planes are set
 }
 
 void Camera::Update() {
-    // Example: Update camera position or orientation (this could be user-controlled)
-    // You might want to use input or game logic here to modify the position/rotation
-    // DirectX::XMFLOAT3 newPos = ...;
-    // position = newPos;
-
+    // You can add movement or camera rotation logic here if needed
 }

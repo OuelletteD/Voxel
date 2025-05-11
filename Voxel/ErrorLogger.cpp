@@ -1,25 +1,13 @@
 #include "ErrorLogger.h"
-#include <comdef.h>
-
+#include <iostream>
+#include <GL/glew.h>
 void ErrorLogger::Log(std::string message) {
-	std::string errorMessage = "Error: " + message;
-	MessageBoxA(NULL, errorMessage.c_str(), "Error", MB_ICONERROR);
+	std::cerr << message << std::endl;
 }
 
-void ErrorLogger::Log(HRESULT hr, std::string message) {
-
-	_com_error error(hr);
-	
-
-	std::wstring errorMessage = L"Error: " + StringConverter::StringToWide(message) + L"\n" + error.ErrorMessage();
-	MessageBoxW(NULL, errorMessage.c_str(), L"Error", MB_ICONERROR);
-}
-
-void ErrorLogger::Log(HRESULT hr, std::wstring message) {
-
-	_com_error error(hr);
-
-
-	std::wstring errorMessage = L"Error: " + message + L"\n" + error.ErrorMessage();
-	MessageBoxW(NULL, errorMessage.c_str(), L"Error", MB_ICONERROR);
+void ErrorLogger::LogOpenGLError() {
+	GLenum err;
+	while ((err = glGetError()) != GL_NO_ERROR) {
+		std::cerr << "OpenGL Error: " << err << std::endl;
+	}
 }

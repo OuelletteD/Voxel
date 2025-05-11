@@ -1,18 +1,21 @@
 #pragma once
-#include <d3d11.h>
-#include <d3dcompiler.h>
+#include <GL/glew.h>
 #include <string>
-#include <DirectXMath.h>
 
 class Shader {
 public:
-	ID3D11VertexShader* vertexShader = nullptr;
-	ID3D11PixelShader* pixelShader = nullptr;
-	ID3D11InputLayout* inputLayout = nullptr;
+	GLuint program;  // OpenGL program handle
+	GLuint vertexShader;  // OpenGL vertex shader handle
+	GLuint fragmentShader;  // OpenGL fragment shader handle
 
-	bool Initialize(ID3D11Device* device, const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath);
-	void SetShaders(ID3D11DeviceContext* context);
-	void Cleanup();
+	Shader() : program(0), vertexShader(0), fragmentShader(0) {}
+	~Shader() { Cleanup(); }
+
+	bool Initialize(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+	void Use();  // Use the shader program
+	void Cleanup();  // Cleanup the shaders and program
+	GLuint GetProgram() const;  // Add the GetProgram function
 private:
-	bool CompileShader(const std::wstring& filePath, const char* entryPoint, const char* target, ID3DBlob** outBlob);
+	bool CompileShader(const std::string& filePath, GLenum shaderType, GLuint& shader);
+	bool LinkProgram();
 };
