@@ -1,8 +1,11 @@
 #include "ErrorLogger.h"
-#include <iostream>
-#include <GL/glew.h>
+
 void ErrorLogger::Log(std::string message) {
 	std::cerr << message << std::endl;
+}
+
+void ErrorLogger::LogError(std::string message) {
+	std::cerr << "Error: " << message << std::endl;
 }
 
 void ErrorLogger::LogOpenGLError() {

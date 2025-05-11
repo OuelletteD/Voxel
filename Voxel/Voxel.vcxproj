@@ -161,26 +161,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="D3DResources.h" />
-    <ClInclude Include="Debugger.h" />
     <ClInclude Include="ErrorLogger.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="StringConverter.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="Voxel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Debugger.cpp" />
     <ClCompile Include="ErrorLogger.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="StringConverter.cpp" />
     <ClCompile Include="Voxel.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,9 +1,10 @@
 #pragma once
-#include "StringConverter.h"
-#include <Windows.h>
+#include <iostream>
+#include <GL/glew.h>
 
 class ErrorLogger {
 public:
 	static void Log(std::string message);
+	static void LogError(std::string message);
 	static void LogOpenGLError();
 };

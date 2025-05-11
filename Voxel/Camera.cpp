@@ -1,7 +1,7 @@
 #include "Camera.h"
 
 glm::mat4 Camera::GetViewMatrix() const {
-    // Using glm::lookAt to create the view matrix (similar to DirectX's XMMatrixLookAtLH)
+    // Using glm::lookAt to create the view matrix
     return glm::lookAt(position, lookAt, up);
 }
 

@@ -1,12 +1,10 @@
 #include "Renderer.h"
-#include <iostream>
-#include "string"
 #include "Debugger.h"
 
 bool Renderer::Initialize() {
 	// Initialize shaders
 	if (!shader.Initialize("VertexShader.glsl", "FragmentShader.glsl")) {
-		std::cerr << "Failed to initialize shaders!" << std::endl;
+		ErrorLogger::LogError("Failed to initialize shaders!");
 		return false;
 	}
 	Vertex vertices[] = {
@@ -32,7 +30,7 @@ bool Renderer::Initialize() {
 	};
 
 	if (!cubeMesh.Initialize(vertices, sizeof(vertices) / sizeof(Vertex), indices, sizeof(indices) / sizeof(short))) {
-		std::cerr << "Failed to initialize the cube mesh!" << std::endl;
+		ErrorLogger::LogError("Failed to initialize the cube mesh!");
 		return false;
 	}
 
