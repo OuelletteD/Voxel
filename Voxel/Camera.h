@@ -1,6 +1,7 @@
 #pragma once
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>  // For glm::lookAt and glm::perspective
+#include "ErrorLogger.h"
 
 class Camera {
 public:
@@ -15,6 +16,11 @@ public:
 	void SetLookAt(const glm::vec3& newLookAt) { lookAt = newLookAt; }
 	void SetUp(const glm::vec3& newUp) { up = newUp; }
 
+	float cameraSpeed = 5.0f;
+	float yaw = -90.0f; //(left to right movement : pointing down -Z)
+	float pitch = 0.0f; //(Up down movement)
+	float fov = 45.0f;
+	float lastX = 400, lastY = 300;
 private:
 	glm::vec3 position;
 	glm::vec3 lookAt;

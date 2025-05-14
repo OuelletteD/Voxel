@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <GL/freeglut.h>
 
 glm::mat4 Camera::GetViewMatrix() const {
     // Using glm::lookAt to create the view matrix
@@ -12,5 +13,8 @@ glm::mat4 Camera::GetProjectionMatrix(float aspectRatio) const {
 }
 
 void Camera::Update() {
+    if (INPUT_MOUSE) {
+        ErrorLogger::Log("Error");
+    }
     // You can add movement or camera rotation logic here if needed
 }

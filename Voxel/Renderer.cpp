@@ -50,7 +50,7 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 	// Create a model matrix for the voxel (positioned correctly in world space)
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(voxel.position.x, voxel.position.y, voxel.position.z));
 	glm::mat4 projection = camera.GetProjectionMatrix(800.0f / 600.0f);
-	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 view = controls->getViewMatrix();
 
 	// Set the color/texture based on voxel type
 	glm::vec4 voxelColor;
@@ -87,6 +87,10 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 	// Bind the uniform buffer to the shader program
 	
 	cubeMesh.Render();
+}
+
+void Renderer::SetControls(Controls* c) {
+	controls = c;
 }
 
 void Renderer::Cleanup() {
