@@ -1,6 +1,5 @@
 #pragma once
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include "ErrorLogger.h"
 #include <glm.hpp>        // Core GLM functionality
 #include <gtc/matrix_transform.hpp> // Transformations like translation, rotation
@@ -13,7 +12,7 @@ struct Vertex {
 
 class Mesh {
 public:
-	GLuint vao;  // Vertex Array Object
+	GLuint vao = 0;  // Vertex Array Object
 	GLuint vertexBuffer = 0;
 	GLuint indexBuffer = 0;
 	unsigned int indexCount;

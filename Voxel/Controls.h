@@ -1,37 +1,34 @@
 #pragma once
 #include "Camera.h"
-#include <GL/freeglut.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/constants.hpp>
+#include <GLFW/glfw3.h>
 class Controls {
 public:
-	Controls();
-	Camera camera;
+	Controls(Camera& cam) : 
+		camera(cam),
+		lastX(400),
+		lastY(300),
+		firstMouse(true),
+		deltaTime(0.0),
+		lastFrame(0.0),
+		mouseSensitivity(0.03f) {};
 	void UpdateDeltaTime();
-	void ProcessKeyboard(unsigned char key);
-	void ProcessMouse(int xpos, int ypos);
+	void ProcessKeyboard(GLFWwindow* window);
+	void ProcessMouse(double xpos, double ypos);
+	void ProcessMouseMovement(double xoffset, double yoffset);
+	void UpdateCameraVectors(float pitch, float yaw);
+	void SetInitialMousePosition(float xpos, float ypos);
 
-	glm::vec3 getCameraPosition() const;
-	glm::vec3 getCameraFront() const;
-	glm::vec3 getCameraUp() const;
-	glm::mat4 getViewMatrix() const;
 private:
-	glm::vec3 cameraPos;
-	glm::vec3 cameraFront;
-	glm::vec3 cameraUp;
-	float yaw;
-	float pitch;
-	float fov;
-
+	Camera& camera;
 	float lastX;
 	float lastY;
 	bool firstMouse;
 
-	float deltaTime;
-	float lastFrame;
+	double deltaTime;
+	double lastFrame;
 
 	float mouseSensitivity;
-	float cameraSpeed;
-	float smoothFactor;
 };

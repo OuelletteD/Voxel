@@ -1,67 +1,77 @@
 #include "Controls.h"
-
-Controls::Controls()
-    : cameraPos(1.0f, 2.0f, -10.0f),
-    cameraFront(0.0f, 0.0f, -1.0f),
-    cameraUp(0.0f, 1.0f, 0.0f),
-    yaw(-90.0f),
-    pitch(0.0f),
-    fov(45.0f),
-    lastX(400),
-    lastY(300),
-    firstMouse(true),
-    deltaTime(0.0f),
-    lastFrame(0.0f),
-    mouseSensitivity(0.002f),
-    cameraSpeed(10.0f),
-    smoothFactor(0.9f)
-
-{}
+#include <string>
 
 void Controls::UpdateDeltaTime() {
-    float currentFrame = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    double currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 }
 
-void Controls::ProcessKeyboard(unsigned char key) {
-    float velocity = cameraSpeed * deltaTime;
-    glm::vec3 right = glm::normalize(glm::cross(cameraFront, cameraUp));
-    if (key == 'w') cameraPos += cameraFront * velocity;
-    if (key == 's') cameraPos -= cameraFront * velocity;
-    if (key == 'a') cameraPos -= right * velocity;
-    if (key == 'd') cameraPos += right * velocity;
+void Controls::ProcessKeyboard(GLFWwindow* window) {
+    float velocity = camera.cameraSpeed * deltaTime;
+    glm::vec3 right = glm::normalize(glm::cross(camera.front, camera.up));
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.position += camera.front * velocity;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.position -= camera.front * velocity;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.position -= right * velocity;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.position += right * velocity;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        camera.position += camera.up * velocity;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        camera.position -= camera.up * velocity;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        ErrorLogger::Log(std::to_string(camera.front.x));
+        ErrorLogger::Log(std::to_string(camera.front.y));
+        ErrorLogger::Log(std::to_string(camera.front.z));
+    }
 }
 
-void Controls::ProcessMouse(int xpos, int ypos) {
-	if (firstMouse) {
-		camera.lastX = xpos;
-		camera.lastY = ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = xpos - camera.lastX;
-    float yoffset = lastY - ypos; ////POTENTIAL ISSUE
+void Controls::ProcessMouse(double xpos, double ypos) {
+    float xoffset = xpos - lastX;
+    float yoffset = ypos - lastY;
+    
     lastX = xpos;
     lastY = ypos;
+
+    ProcessMouseMovement(xoffset, yoffset);
+}
+
+void Controls::ProcessMouseMovement(double xoffset, double yoffset) {
 
     xoffset *= mouseSensitivity;
     yoffset *= mouseSensitivity;
 
-    yaw = smoothFactor * yaw + (1.0f - smoothFactor) * (yaw + xoffset);
-    pitch += yoffset;
+    camera.yaw += xoffset;
+    camera.pitch -= yoffset;
 
-    if (pitch > 89.0f) pitch = 89.0f;
-    if (pitch < -89.0f) pitch = -89.0f;
+    float yaw = camera.yaw;
+    float pitch = camera.pitch;
 
+    if (pitch > 89.0f) {
+        camera.pitch = 89.0f;
+        pitch = 89.0f;
+    }
+    if (pitch < -89.0f) {
+        camera.pitch = -89.0f;
+        pitch = -89.0f;
+    }
+
+    UpdateCameraVectors(pitch, yaw);
+}
+
+void Controls::UpdateCameraVectors(float pitch, float yaw) {
     glm::vec3 front;
     front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     front.y = sin(glm::radians(pitch));
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(front);
+    camera.front = glm::normalize(front);
 }
 
-glm::mat4 Controls::getViewMatrix() const { return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); }
-glm::vec3 Controls::getCameraPosition() const { return cameraPos; }
-glm::vec3 Controls::getCameraFront() const { return cameraFront; }
-glm::vec3 Controls::getCameraUp() const { return cameraUp; }
+void Controls::SetInitialMousePosition(float xpos, float ypos) {
+    lastX = xpos;
+    lastY = ypos;
+    firstMouse = false;  // disables first-frame delta
+}

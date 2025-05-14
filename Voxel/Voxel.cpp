@@ -1,5 +1,5 @@
 #include <GL/glew.h>
-#include <GL/freeglut.h>
+#include <GLFW/glfw3.h>
 #include "Shader.h"
 #include "Renderer.h"
 #include "World.h"
@@ -7,64 +7,57 @@
 #include "Controls.h"
 
 Shader shader;
-Renderer renderer;
+Camera camera(glm::vec3(0.0f, 7.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+Renderer renderer(camera);
+Controls controls(camera);
 World world;
-GLuint vao = 0, vbo = 0;
-Controls controls;
 
-void applyCamera(int width, int height) {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0f, (float)width / height, 0.1f, 100.0f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glm::vec3 pos = controls.getCameraPosition();
-    glm::vec3 front = controls.getCameraFront();
-    glm::vec3 up = controls.getCameraUp();
-
-    glm::vec3 center = pos + front;
-    gluLookAt(pos.x, pos.y, pos.z, center.x, center.y, center.z, up.x, up.y, up.z);
-}
-
-void display() {
-    int width = glutGet(GLUT_WINDOW_WIDTH);
-    int height = glutGet(GLUT_WINDOW_HEIGHT);
-
-    applyCamera(width, height);
+void display(GLFWwindow* window, Chunk chunk) {
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    glViewport(0, 0, width, height); // Optional, good practice if window resizes
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Chunk chunk = world.CreateChunk(0, 0);
+    
     world.RenderChunk(renderer, chunk);
-    glutSwapBuffers();
+
 }
 
-void idle() {
-    controls.UpdateDeltaTime();
-    glutPostRedisplay();
-}
-
-void keyboard(unsigned char key, int x, int y) {
-    controls.ProcessKeyboard(key);
-}
-
-void mouse(int x, int y) {
+void mouse(GLFWwindow* window, double x, double y) {
     controls.ProcessMouse(x, y);
 }
 
 int main(int argc, char** argv) {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(800, 600);
-    glutCreateWindow("Voxel Renderer");
-    glewInit();
-    glEnable(GL_DEPTH_TEST);  // Enable depth testing for proper z-ordering
-    renderer.Initialize();
-    renderer.SetControls(&controls);
+    int screenWidth = 800, screenHeight = 600;
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    glutDisplayFunc(display);
-    glutIdleFunc(idle);
-    glutKeyboardFunc(keyboard);
-    glutPassiveMotionFunc(mouse);
-    glutMainLoop();
-    return 0;
+    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Voxel Renderer", nullptr, nullptr);
+    if (!window) {
+        ErrorLogger::LogError("Failed to Create GLFW Window");
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glewInit();
+    glEnable(GL_DEPTH_TEST);
+
+    renderer.Initialize();
+    Chunk chunk = world.CreateChunk(0, 0);
+    glfwSetCursorPos(window, screenWidth / 2, screenHeight / 2);
+    controls.SetInitialMousePosition(screenWidth / 2.0, screenHeight / 2.0);
+
+    glfwSetCursorPosCallback(window, mouse);
+    while (!glfwWindowShouldClose(window)) {
+        controls.UpdateDeltaTime();
+        controls.ProcessKeyboard(window);
+        display(window, chunk);
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+    glfwDestroyWindow(window);
+    glfwTerminate();
 }

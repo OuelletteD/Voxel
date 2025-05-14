@@ -1,6 +1,5 @@
 #pragma once
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include "Camera.h"
 #include "Controls.h"
 #include "Mesh.h"
@@ -14,6 +13,7 @@ struct VoxelRender {
 
 class Renderer {
 public:
+	Renderer(Camera& cam) : camera(cam) {}
 	bool Initialize();
 	void RenderVoxel(const Voxel& voxel);
 	void Cleanup();
@@ -21,9 +21,9 @@ public:
 private:
 	Shader shader;
 	Mesh cubeMesh;
-	Camera camera;
+	Camera& camera;
 	Controls* controls = nullptr;
-	GLuint constantBuffer;  // OpenGL uses UBOs for storing constant data
-	GLuint projectionMatrixLocation;  // Location for the projection matrix in the shader
-	GLuint viewMatrixLocation;  // Location for the view matrix in the shader
+	GLuint constantBuffer = {};  // OpenGL uses UBOs for storing constant data
+	GLuint projectionMatrixLocation = {};  // Location for the projection matrix in the shader
+	GLuint viewMatrixLocation = {};  // Location for the view matrix in the shader
 };

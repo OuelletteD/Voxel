@@ -37,7 +37,6 @@ bool Renderer::Initialize() {
 	}
 
 	// Initialize camera
-	camera.SetPosition(glm::vec3(-3.0f, 30.0f, -15.0f));  // Set an initial camera position
 	// Create a uniform buffer object (UBO) for storing matrices (model, view, projection)
 	glGenBuffers(1, &constantBuffer);
 	glBindBuffer(GL_UNIFORM_BUFFER, constantBuffer);
@@ -50,7 +49,7 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 	// Create a model matrix for the voxel (positioned correctly in world space)
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(voxel.position.x, voxel.position.y, voxel.position.z));
 	glm::mat4 projection = camera.GetProjectionMatrix(800.0f / 600.0f);
-	glm::mat4 view = controls->getViewMatrix();
+	glm::mat4 view = camera.GetViewMatrix();
 
 	// Set the color/texture based on voxel type
 	glm::vec4 voxelColor;
@@ -61,13 +60,12 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 		break;
 	case 1: // Example: dirt
 		voxelColor = glm::vec4(0.5f, 0.25f, 0.1f, 1.0f); // Dirt brown color
-		
 		break;
 		// Add more voxel types (e.g., water, stone) as needed
 	case 2: // Example: grass
 		voxelColor = glm::vec4(0.13f, 0.55f, 0.13f, 1.0f); // Grass green color
+		break;
 	default:
-		
 		break;
 	}
 	// Pass the model matrix to the shader
