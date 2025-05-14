@@ -25,8 +25,8 @@ bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const un
     glEnableVertexAttribArray(0);  // Enable position attribute
 
     // Color attribute
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));  // Color
-    glEnableVertexAttribArray(1);  // Enable color attribute
+    //glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));  // Color
+    //glEnableVertexAttribArray(1);  // Enable color attribute
 
     // Unbind buffers and VAO
     glBindVertexArray(0);

@@ -1,8 +1,9 @@
 #version 330 core
 
-in vec4 fragColor;  // 'in' is used to receive data from the vertex shader
+uniform vec4 voxelColor;  //uniform to pass it from glUniform4fv
+// 'in' is used to receive data from the vertex shader
 out vec4 color;     // 'out' is used to output the final color to the screen
 
 void main() {
-    color = fragColor;  // Output the interpolated color from the vertex shader
+    color = voxelColor;  // Output the interpolated color from the vertex shader
 }

@@ -28,6 +28,15 @@ void Shader::Use() {
 	glUseProgram(program);  // Activate the shader program
 }
 
+GLint Shader::GetUniformLocation(const std::string& name) {
+    if (uniformLocations.count(name)) {
+        return uniformLocations[name];
+    }
+    GLint location = glGetUniformLocation(program, name.c_str());
+    uniformLocations[name] = location;
+    return location;
+}
+
 bool Shader::CompileShader(const std::string& filePath, GLenum shaderType, GLuint& shader) {
     // Read shader file into string
     std::ifstream shaderFile(filePath);

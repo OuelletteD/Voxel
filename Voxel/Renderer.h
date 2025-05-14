@@ -4,11 +4,17 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "Shader.h"
+#include "World.h"
+
+struct VoxelRender {
+	glm::mat4 modelMatrix;
+	glm::vec4 color;
+};
 
 class Renderer {
 public:
 	bool Initialize();
-	void Render();
+	void RenderVoxel(const Voxel& voxel);
 	void Cleanup();
 private:
 	Shader shader;
