@@ -5,20 +5,18 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "World.h"
-
-struct VoxelRender {
-	glm::mat4 modelMatrix;
-	glm::vec4 color;
-};
+#include "Texture.h"
 
 class Renderer {
 public:
-	Renderer(Camera& cam) : camera(cam) {}
+	Renderer(Camera& cam) : camera(cam), texture("Terrain.png") {}
 	bool Initialize();
 	void RenderVoxel(const Voxel& voxel);
 	void Cleanup();
 	void SetControls(Controls* c);
+
 private:
+	Texture texture;
 	Shader shader;
 	Mesh cubeMesh;
 	Camera& camera;

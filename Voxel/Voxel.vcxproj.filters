@@ -45,6 +45,9 @@
     <ClInclude Include="Controls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Voxel.cpp">
@@ -71,6 +74,9 @@
     <ClCompile Include="Controls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Voxel.rc">
@@ -82,6 +88,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="Voxel.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Terrain.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

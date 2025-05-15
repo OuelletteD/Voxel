@@ -1,28 +1,20 @@
 #pragma once
 #include <unordered_map>
-
+#include <glm.hpp>
 #define CHUNK_SIZE 16
 
 class Renderer;
 
-struct VoxelPosition {
-	int x, y, z;
-
-	bool operator==(const VoxelPosition& other) const {
-		return x == other.x && y == other.y && z == other.z;
-	}
-};
-
 struct Voxel {
 	int type;
-	VoxelPosition position;
+	glm::vec3 position;
 };
 
 
 namespace std {
 	template <>
-	struct hash<VoxelPosition> {
-		size_t operator()(const VoxelPosition& pos) const {
+	struct hash<glm::vec3> {
+		size_t operator()(const glm::vec3& pos) const {
 			size_t h1 = std::hash<int>()(pos.x);
 			size_t h2 = std::hash<int>()(pos.y);
 			size_t h3 = std::hash<int>()(pos.z);

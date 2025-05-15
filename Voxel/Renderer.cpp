@@ -2,33 +2,71 @@
 #include "Debugger.h"
 
 bool Renderer::Initialize() {
+	//Initialize Texture
+	bool success = texture.Initialize();
+	if (!success) {
+		ErrorLogger::LogError("Texture failed to initialize!");
+		return false;
+	}
+	Texture::InitializeBlockTextures();
+	texture.Bind(0); // bind to texture unit 0
+
+	auto uvs = Texture::GetTileUVs(0, 1);
+	
 	// Initialize shaders
 	if (!shader.Initialize("VertexShader.glsl", "FragmentShader.glsl")) {
 		ErrorLogger::LogError("Failed to initialize shaders!");
 		return false;
 	}
 	shader.Use();
-	shader.GetUniformLocation("voxelColor");
-	Vertex vertices[] = {
-		// Positions            // Colors
-		{{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Bottom-left-front (dirt brown)
-		{{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Bottom-right-front (dirt brown)
-		{{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Top-right-front (dirt brown)
-		{{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Top-left-front (dirt brown)
+	shader.SetInt("atlas", 0); // set uniform sampler to use texture unit 0
+	
 
-		{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Bottom-left-back (dirt brown)
-		{{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Bottom-right-back (dirt brown)
-		{{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Top-right-back (grass green)
-		{{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}   // Top-left-back (grass green)
+	Vertex vertices[] = {
+		// Front face (z = -0.5) — use uvs as-is
+		{ glm::vec3(-0.5f, -0.5f, -0.5f), uvs[0] },
+		{ glm::vec3(0.5f, -0.5f, -0.5f), uvs[1] }, 
+		{ glm::vec3(0.5f,  0.5f, -0.5f), uvs[2] },
+		{ glm::vec3(-0.5f,  0.5f, -0.5f), uvs[3] },
+
+		// Back face (z = 0.5) — flip U (swap left/right UVs)
+		{ glm::vec3(-0.5f, -0.5f,  0.5f), uvs[1] },
+		{ glm::vec3(0.5f, -0.5f,  0.5f), uvs[0] },
+		{ glm::vec3(0.5f,  0.5f,  0.5f), uvs[3] },
+		{ glm::vec3(-0.5f,  0.5f,  0.5f), uvs[2] },
+
+		// Left face (x = -0.5) — use uvs as-is
+		{ glm::vec3(-0.5f, -0.5f, -0.5f), uvs[0] },
+		{ glm::vec3(-0.5f, -0.5f,  0.5f), uvs[1] },
+		{ glm::vec3(-0.5f,  0.5f,  0.5f), uvs[2] },
+		{ glm::vec3(-0.5f,  0.5f, -0.5f), uvs[3] },
+
+		// Right face (x = 0.5) — use uvs as-is
+		{ glm::vec3(0.5f, -0.5f, -0.5f), uvs[0] },
+		{ glm::vec3(0.5f, -0.5f,  0.5f), uvs[1] },
+		{ glm::vec3(0.5f,  0.5f,  0.5f), uvs[2] },
+		{ glm::vec3(0.5f,  0.5f, -0.5f), uvs[3] },
+
+		// Top face (y = 0.5) — flip V (swap top and bottom UVs)
+		{ glm::vec3(-0.5f,  0.5f, -0.5f), uvs[3] }, 
+		{ glm::vec3(0.5f,  0.5f, -0.5f), uvs[2] },
+		{ glm::vec3(0.5f,  0.5f,  0.5f), uvs[1] },
+		{ glm::vec3(-0.5f,  0.5f,  0.5f), uvs[0] }, 
+
+		// Bottom face (y = -0.5) — flip V (swap top and bottom UVs)
+		{ glm::vec3(-0.5f, -0.5f, -0.5f), uvs[1] }, 
+		{ glm::vec3(0.5f, -0.5f, -0.5f), uvs[0] }, 
+		{ glm::vec3(0.5f, -0.5f,  0.5f), uvs[3] },
+		{ glm::vec3(-0.5f, -0.5f,  0.5f), uvs[2] }  
 	};
 
 	unsigned short indices[] = {
-		0, 1, 2, 2, 3, 0,  // Front face
-		4, 5, 6, 6, 7, 4,  // Back face
-		0, 1, 5, 5, 4, 0,  // Bottom face
-		2, 3, 7, 7, 6, 2,  // Top face
-		0, 3, 7, 7, 4, 0,  // Left face
-		1, 2, 6, 6, 5, 1   // Right face
+	0, 1, 2, 2, 3, 0,       // Front face
+	4, 5, 6, 6, 7, 4,       // Back face
+	8, 9, 10, 10, 11, 8,    // Left face
+	12, 13, 14, 14, 15, 12, // Right face
+	16, 17, 18, 18, 19, 16, // Top face
+	20, 21, 22, 22, 23, 20  // Bottom face
 	};
 
 	if (!cubeMesh.Initialize(vertices, sizeof(vertices) / sizeof(Vertex), indices, sizeof(indices) / sizeof(short))) {
@@ -51,23 +89,10 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 	glm::mat4 projection = camera.GetProjectionMatrix(800.0f / 600.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 
-	// Set the color/texture based on voxel type
-	glm::vec4 voxelColor;
-	switch (voxel.type) {
-	case 0: // Example: air
-		voxelColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); // Default to black for air?
-		
-		break;
-	case 1: // Example: dirt
-		voxelColor = glm::vec4(0.5f, 0.25f, 0.1f, 1.0f); // Dirt brown color
-		break;
-		// Add more voxel types (e.g., water, stone) as needed
-	case 2: // Example: grass
-		voxelColor = glm::vec4(0.13f, 0.55f, 0.13f, 1.0f); // Grass green color
-		break;
-	default:
-		break;
-	}
+	glActiveTexture(GL_TEXTURE0);
+	texture.Bind(0);
+
+	BlockTextureSet tileIndex = Texture::GetBlockTexture(voxel.type);
 	// Pass the model matrix to the shader
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, constantBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
@@ -75,15 +100,68 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), glm::value_ptr(projection));
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	shader.Use();
-	GLint loc = shader.GetUniformLocation("voxelColor");
+	GLint loc = shader.GetUniformLocation("atlas");
 	if (loc == -1) {
-		std::cout << "Uniform 'voxelColor' not found!" << std::endl;
+		ErrorLogger::LogError("Uniform 'atlas' not found!");
 	}
 	else {
-		glUniform4fv(loc, 1, glm::value_ptr(voxelColor));  // Set the color only if the uniform location is valid
+		// Bind the uniform buffer to the shader program
+		glUniform1i(loc, 0);  // Set the color only if the uniform location is valid
 	}
-	// Bind the uniform buffer to the shader program
 	
+	std::vector<Vertex> verts;
+	std::vector<unsigned short> indices;
+	unsigned int indexOffset = 0;
+
+	// Cube face offsets
+	const glm::vec3 faceOffsets[6][4] = {
+		// Top face (y = +0.5)
+		{ {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f} },
+		// Bottom face (y = -0.5)
+		{ {-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f} },
+		// Front face (z = +0.5)
+		{ {-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f} },
+		// Back face (z = -0.5)
+		{ {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f} },
+		// Left face (x = -0.5)
+		{ {-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, -0.5f} },
+		// Right face (x = +0.5)
+		{ {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f} }
+	};
+
+	// Texture coordinates
+	const std::array<glm::vec2, 4>* faceUVs[6] = {
+		&tileIndex.top,
+		&tileIndex.bottom,
+		&tileIndex.side,
+		&tileIndex.side,
+		&tileIndex.side,
+		&tileIndex.side
+	};
+
+	for (int face = 0; face < 6; ++face) {
+		for (int i = 0; i < 4; ++i) {
+			Vertex v;
+			v.position = faceOffsets[face][i];
+			v.texCoord = (*faceUVs[face])[i];
+			verts.push_back(v);
+		}
+
+		// Add indices for two triangles
+		indices.push_back(indexOffset + 0);
+		indices.push_back(indexOffset + 1);
+		indices.push_back(indexOffset + 2);
+
+		indices.push_back(indexOffset + 2);
+		indices.push_back(indexOffset + 3);
+		indices.push_back(indexOffset + 0);
+
+		indexOffset += 4;
+	}
+
+	// Build mesh and draw
+	cubeMesh.SetData(verts, indices);
+	cubeMesh.Upload(); // Send to GPU
 	cubeMesh.Render();
 }
 
@@ -95,4 +173,3 @@ void Renderer::Cleanup() {
 	cubeMesh.Cleanup();
 	glDeleteBuffers(1, &constantBuffer);
 }
-
