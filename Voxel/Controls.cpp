@@ -1,5 +1,6 @@
 #include "Controls.h"
 #include <string>
+#include "Config.h"
 
 void Controls::UpdateDeltaTime() {
     double currentFrame = glfwGetTime();
@@ -26,6 +27,11 @@ void Controls::ProcessKeyboard(GLFWwindow* window) {
         ErrorLogger::Log(std::to_string(camera.front.x));
         ErrorLogger::Log(std::to_string(camera.front.y));
         ErrorLogger::Log(std::to_string(camera.front.z));
+    }
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
+        glfwSetInputMode(window, GLFW_CURSOR, (cursorLocked ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED));
+        cursorLocked = !cursorLocked;
     }
 }
 

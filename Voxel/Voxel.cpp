@@ -5,6 +5,7 @@
 #include "World.h"
 #include "ErrorLogger.h"
 #include "Controls.h"
+#include "Config.h"
 
 Shader shader;
 Camera camera(glm::vec3(0.0f, 7.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -81,13 +82,12 @@ void mouse(GLFWwindow* window, double x, double y) {
 }
 
 int main(int argc, char** argv) {
-    int screenWidth = 800, screenHeight = 600;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Voxel Renderer", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(Config::SCREEN_WIDTH, Config::SCREEN_HEIGHT, "Voxel Renderer", nullptr, nullptr);
     if (!window) {
         ErrorLogger::LogError("Failed to Create GLFW Window");
         glfwTerminate();
@@ -100,8 +100,8 @@ int main(int argc, char** argv) {
     SetupDebugCallback();
     renderer.Initialize();
     Chunk chunk = world.CreateChunk(0, 0);
-    glfwSetCursorPos(window, screenWidth / 2, screenHeight / 2);
-    controls.SetInitialMousePosition(screenWidth / 2.0f, screenHeight / 2.0f);
+    glfwSetCursorPos(window, Config::SCREEN_WIDTH / 2, Config::SCREEN_HEIGHT / 2);
+    controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
 
     glfwSetCursorPosCallback(window, mouse);
     

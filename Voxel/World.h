@@ -1,7 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <glm.hpp>
-#define CHUNK_SIZE 16
+#include "Config.h"
 
 class Renderer;
 
@@ -43,7 +43,7 @@ namespace std {
 }
 
 struct Chunk {
-	Voxel voxels[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+	Voxel voxels[Config::CHUNK_SIZE][Config::CHUNK_SIZE][Config::CHUNK_SIZE];
 	ChunkPosition chunkPosition;
 };
 class World {

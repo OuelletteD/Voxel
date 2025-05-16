@@ -31,4 +31,5 @@ private:
 	double lastFrame;
 
 	float mouseSensitivity;
+	bool cursorLocked = false;
 };
