@@ -65,15 +65,14 @@ void SetupDebugCallback()
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, &unusedIds, GL_FALSE);
 }
 
-void display(GLFWwindow* window, Chunk chunk) {
+void display(GLFWwindow* window, World world) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height); // Optional, good practice if window resizes
-    
-    
-    world.RenderChunk(renderer, chunk);
+        
+    renderer.RenderWorld(world);
 
 }
 
@@ -99,16 +98,15 @@ int main(int argc, char** argv) {
     glEnable(GL_DEPTH_TEST);
     SetupDebugCallback();
     renderer.Initialize();
-    Chunk chunk = world.CreateChunk(0, 0);
     glfwSetCursorPos(window, Config::SCREEN_WIDTH / 2, Config::SCREEN_HEIGHT / 2);
     controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
 
     glfwSetCursorPosCallback(window, mouse);
-    
+    world.Generate(1,1);
     while (!glfwWindowShouldClose(window)) {
         controls.UpdateDeltaTime();
         controls.ProcessKeyboard(window);
-        display(window, chunk);
+        display(window, world);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

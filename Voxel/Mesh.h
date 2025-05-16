@@ -9,6 +9,12 @@
 struct Vertex {
 	glm::vec3 position;
 	glm::vec2 texCoord;
+	glm::vec3 normal;
+};
+
+struct ChunkMesh {
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
 };
 
 class Mesh {
@@ -19,12 +25,12 @@ public:
 	unsigned int indexCount = 0;
 
 	std::vector<Vertex> localVertices;
-	std::vector<unsigned short> localIndices;
+	std::vector<unsigned int> localIndices;
 
-	bool Initialize(const Vertex* vertices, unsigned int vertexCount, const unsigned short* indices, unsigned int indexCount);
+	bool Initialize(const Vertex* vertices, unsigned int vertexCount, const unsigned int* indices, unsigned int indexCount);
 	void Render();
 	void Cleanup();
 
-	void SetData(const std::vector<Vertex>& vertices, const std::vector<unsigned short>& indices);
+	void SetData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
 	void Upload();
 };

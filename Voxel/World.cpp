@@ -1,41 +1,34 @@
 #include "World.h"
-#include "Renderer.h"
+#include <string>
 
-Chunk World::CreateChunk(int chunkX, int chunkY) {
-	Chunk chunk;
+const bool World::IsVoxelSolidAt(const glm::ivec3& pos) const {
+	ChunkPosition chunkPosition = { pos.x / Config::CHUNK_SIZE, pos.y / Config::CHUNK_SIZE };
 
-	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
-		for (int y = 0; y < Config::CHUNK_SIZE; y++) {
-			for (int z = 0; z < Config::CHUNK_SIZE; z++) {
-				if (y == 4) {
-					chunk.voxels[x][y][z].type = 2;  // Grass
-				} else if (y > 1 && y < 4) {
-					chunk.voxels[x][y][z].type = 1;  // Dirt
-				} else if (y == 1) {
-					chunk.voxels[x][y][z].type = 3;  // stone
-				} else {
-					chunk.voxels[x][y][z].type = 0;  // Air
-				}
-			}
-		}
-	}
+	auto it = chunks.find(chunkPosition);
+	if (it == chunks.end()) return false;
+	const Chunk& chunk = it->second;
+
+	// Wrap voxel coordinates inside the chunk
+	int localX = (pos.x % Config::CHUNK_SIZE + Config::CHUNK_SIZE) % Config::CHUNK_SIZE;
+	int localY = (pos.y % Config::CHUNK_SIZE + Config::CHUNK_SIZE) % Config::CHUNK_SIZE;
+	int localZ = pos.z;
+
+	const Voxel* voxel = chunk.GetVoxel(localX, localY, localZ);
+	return voxel && voxel->type != 0;
+}
+
+Chunk& World::CreateChunk(int chunkX, int chunkY) {
 	ChunkPosition chunkPos = { chunkX, chunkY };
+	Chunk& chunk = chunks[chunkPos];
 	chunk.chunkPosition = chunkPos;
-	chunks[chunkPos] = chunk;
-	
+	chunk.Generate();
 	return chunk;
 }
 
-void World::RenderChunk(Renderer& renderer, Chunk& chunk) {
-	for (int x = 0; x < Config::CHUNK_SIZE; ++x) {
-		for (int y = 0; y < Config::CHUNK_SIZE; ++y) {
-			for (int z = 0; z < Config::CHUNK_SIZE; ++z) {
-				if (chunk.voxels[x][y][z].type != 0) {  // If not air
-					glm::vec3 voxelPos = { x + chunk.chunkPosition.x * Config::CHUNK_SIZE, y + chunk.chunkPosition.y * Config::CHUNK_SIZE, z };
-					chunk.voxels[x][y][z].position = voxelPos;
-					renderer.RenderVoxel(chunk.voxels[x][y][z]);
-				}
-			}
+void World::Generate(int xChunks, int yChunks) {
+	for (int x = 0; x < xChunks; x++) {
+		for (int y = 0; y < xChunks; y++) {
+			Chunk chunk = CreateChunk(x, y);
 		}
 	}
 }

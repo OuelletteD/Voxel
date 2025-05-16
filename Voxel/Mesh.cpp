@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const unsigned short* indices, unsigned int indexCount) {
+bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const unsigned int* indices, unsigned int indexCount) {
 	this->indexCount = indexCount;
 
     // Generate and bind the VAO
@@ -15,7 +15,7 @@ bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const un
 	// Create Index Buffer (IBO)
 	glGenBuffers(1, &indexBuffer);  // Generate a new index buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);  // Bind the index buffer
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * indexCount, indices, GL_STATIC_DRAW);  // Load data into the buffer
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indexCount, indices, GL_STATIC_DRAW);  // Load data into the buffer
 
     // Enable vertex attributes
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);  // Bind the vertex buffer to configure attributes
@@ -39,12 +39,12 @@ void Mesh::Render() {
     // Bind the VAO (this will automatically bind the VBO and EBO)
     glBindVertexArray(vao);
     // Draw the object
-    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
     // Unbind the VAO (optional)
     glBindVertexArray(0);
 }
 
-void Mesh::SetData(const std::vector<Vertex>& vertices, const std::vector<unsigned short>& indices) {
+void Mesh::SetData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
     localVertices = vertices;
     localIndices = indices;
     indexCount = static_cast<unsigned int>(indices.size());
@@ -62,7 +62,7 @@ void Mesh::Upload() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * localVertices.size(), localVertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * localIndices.size(), localIndices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * localIndices.size(), localIndices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(0);
 }

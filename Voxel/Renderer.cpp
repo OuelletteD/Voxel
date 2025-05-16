@@ -21,7 +21,6 @@ bool Renderer::Initialize() {
 	shader.Use();
 	shader.SetInt("atlas", 0); // set uniform sampler to use texture unit 0
 	
-
 	Vertex vertices[] = {
 		// Front face (z = -0.5) — use uvs as-is
 		{ glm::vec3(-0.5f, -0.5f, -0.5f), uvs[0] },
@@ -60,7 +59,7 @@ bool Renderer::Initialize() {
 		{ glm::vec3(-0.5f, -0.5f,  0.5f), uvs[2] }  
 	};
 
-	unsigned short indices[] = {
+	unsigned int indices[] = {
 	0, 1, 2, 2, 3, 0,       // Front face
 	4, 5, 6, 6, 7, 4,       // Back face
 	8, 9, 10, 10, 11, 8,    // Left face
@@ -69,8 +68,8 @@ bool Renderer::Initialize() {
 	20, 21, 22, 22, 23, 20  // Bottom face
 	};
 
-	if (!cubeMesh.Initialize(vertices, sizeof(vertices) / sizeof(Vertex), indices, sizeof(indices) / sizeof(short))) {
-		ErrorLogger::LogError("Failed to initialize the cube mesh!");
+	if (!chunkMesh.Initialize(vertices, sizeof(vertices) / sizeof(Vertex), indices, sizeof(indices) / sizeof(short))) {
+		ErrorLogger::LogError("Failed to initialize the chunk mesh!");
 		return false;
 	}
 
@@ -83,16 +82,24 @@ bool Renderer::Initialize() {
 	return true;
 }
 
-void Renderer::RenderVoxel(const Voxel& voxel) {
+void Renderer::RenderChunk(const Chunk& chunk, const World& world) {
+	BuildChunkMesh(chunk, world);
+	chunkMesh.Upload(); // Send to GPU
+
+	glm::vec3 worldChunkPosition = {
+		chunk.chunkPosition.x * Config::CHUNK_SIZE,
+		chunk.chunkPosition.y * Config::CHUNK_SIZE,
+		0.0f
+	};
+
 	// Create a model matrix for the voxel (positioned correctly in world space)
-	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(voxel.position.x, voxel.position.y, voxel.position.z));
-	glm::mat4 projection = camera.GetProjectionMatrix(800.0f / 600.0f);
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), worldChunkPosition);
+	glm::mat4 projection = camera.GetProjectionMatrix(Config::SCREEN_WIDTH / Config::SCREEN_HEIGHT);
 	glm::mat4 view = camera.GetViewMatrix();
 
 	glActiveTexture(GL_TEXTURE0);
 	texture.Bind(0);
-
-	BlockTextureSet tileIndex = Texture::GetBlockTexture(voxel.type);
+	
 	// Pass the model matrix to the shader
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, constantBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
@@ -108,11 +115,14 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 		// Bind the uniform buffer to the shader program
 		glUniform1i(loc, 0);  // Set the color only if the uniform location is valid
 	}
-	
-	std::vector<Vertex> verts;
-	std::vector<unsigned short> indices;
-	unsigned int indexOffset = 0;
+	chunkMesh.Render();
 
+}
+
+void Renderer::BuildChunkMesh(const Chunk& chunk, const World& world) {
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	unsigned int indexOffset = 0;
 	// Cube face offsets
 	const glm::vec3 faceOffsets[6][4] = {
 		// Top face (y = +0.5)
@@ -130,39 +140,58 @@ void Renderer::RenderVoxel(const Voxel& voxel) {
 	};
 
 	// Texture coordinates
-	const std::array<glm::vec2, 4>* faceUVs[6] = {
-		&tileIndex.top,
-		&tileIndex.bottom,
-		&tileIndex.side,
-		&tileIndex.side,
-		&tileIndex.side,
-		&tileIndex.side
-	};
-
-	for (int face = 0; face < 6; ++face) {
-		for (int i = 0; i < 4; ++i) {
-			Vertex v;
-			v.position = faceOffsets[face][i];
-			v.texCoord = (*faceUVs[face])[i];
-			verts.push_back(v);
+	auto GetFaceUVs = [](const Voxel& voxel, int face) -> const std::array<glm::vec2, 4>{
+		BlockTextureSet tileIndex = Texture::GetBlockTexture(voxel.type);
+		switch (face) {
+			case 0: return tileIndex.top;
+			case 1: return tileIndex.bottom;
+			default: return tileIndex.side;
 		}
+	};
+	
+	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
+		for (int y = 0; y < Config::CHUNK_SIZE; y++) {
+			for (int z = 0; z < Config::CHUNK_SIZE; z++) {
+				const Voxel& voxel = chunk.voxels[x][y][z];
+				
+				if (voxel.type == 0) continue;
+				glm::ivec3 posInChunk = { x,y,z };
+				for (int face = 0; face < 6; ++face) {
+					glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
+					if (world.IsVoxelSolidAt(neighborPos)) {
+						continue;
+					}
+					const glm::vec3 voxelCenter = glm::vec3(x + 0.5f, y + 0.5f, z + 0.5f);
+					const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face);
+					for (int i = 0; i < 4; ++i) {
+						Vertex v;
+						v.position = faceOffsets[face][i] + voxelCenter;
+						v.texCoord = faceUVs[i];
+						
+						vertices.push_back(v);
+					}
 
-		// Add indices for two triangles
-		indices.push_back(indexOffset + 0);
-		indices.push_back(indexOffset + 1);
-		indices.push_back(indexOffset + 2);
+					// Add indices for two triangles
+					indices.push_back(indexOffset + 0);
+					indices.push_back(indexOffset + 1);
+					indices.push_back(indexOffset + 2);
 
-		indices.push_back(indexOffset + 2);
-		indices.push_back(indexOffset + 3);
-		indices.push_back(indexOffset + 0);
+					indices.push_back(indexOffset + 2);
+					indices.push_back(indexOffset + 3);
+					indices.push_back(indexOffset + 0);
 
-		indexOffset += 4;
+					indexOffset += 4;
+				}
+			}
+		}
 	}
+	chunkMesh.SetData(vertices, indices);
+}
 
-	// Build mesh and draw
-	cubeMesh.SetData(verts, indices);
-	cubeMesh.Upload(); // Send to GPU
-	cubeMesh.Render();
+void Renderer::RenderWorld(const World& world) {
+	for (const auto& [chunkPos, chunk] : world.chunks) {
+		RenderChunk(chunk, world);
+	}
 }
 
 void Renderer::SetControls(Controls* c) {
@@ -170,6 +199,6 @@ void Renderer::SetControls(Controls* c) {
 }
 
 void Renderer::Cleanup() {
-	cubeMesh.Cleanup();
+	chunkMesh.Cleanup();
 	glDeleteBuffers(1, &constantBuffer);
 }
