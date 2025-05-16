@@ -1,7 +1,8 @@
 #pragma once
 #include <glm.hpp>
-#include "Config.h";
+#include "Config.h"
 #include "ErrorLogger.h"
+#include "PerlinNoise.hpp"
 
 struct Voxel {
 	int type;
@@ -9,12 +10,12 @@ struct Voxel {
 };
 
 struct ChunkPosition {
-	int x, y;
+	int x, z;
 	bool operator==(const ChunkPosition& other) const {
-		return x == other.x && y == other.y;
+		return x == other.x && z == other.z;
 	}
 	glm::ivec3 operator*(const int multiplier) const {
-		glm::ivec3 newValue = { x * multiplier, y * multiplier, 0};
+		glm::ivec3 newValue = { x * multiplier, 0, z * multiplier};
 		return newValue;
 	}
 };
@@ -24,7 +25,7 @@ namespace std {
 	struct hash<ChunkPosition> {
 		size_t operator()(const ChunkPosition& pos) const {
 			size_t h1 = std::hash<int>()(pos.x);
-			size_t h2 = std::hash<int>()(pos.y);
+			size_t h2 = std::hash<int>()(pos.z);
 			return h1 ^ (h2 << 1);
 		}
 	};
@@ -37,4 +38,11 @@ public:
 
 	void Generate();
 	const Voxel* GetVoxel(int x, int y, int z) const;
+private:
+	float CreatePerlinPoint(int x, int z);
+	const siv::PerlinNoise::seed_type seed = 12345;
+	const siv::PerlinNoise perlin{ seed };
+	const float amplitude = 0.03;
+	const float maxHeight = Config::CHUNK_HEIGHT;
+	const int octaves = 4;
 };

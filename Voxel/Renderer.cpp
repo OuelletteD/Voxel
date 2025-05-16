@@ -88,8 +88,8 @@ void Renderer::RenderChunk(const Chunk& chunk, const World& world) {
 
 	glm::vec3 worldChunkPosition = {
 		chunk.chunkPosition.x * Config::CHUNK_SIZE,
-		chunk.chunkPosition.y * Config::CHUNK_SIZE,
-		0.0f
+		0.0f,
+		chunk.chunkPosition.z * Config::CHUNK_SIZE
 	};
 
 	// Create a model matrix for the voxel (positioned correctly in world space)
@@ -140,8 +140,9 @@ void Renderer::BuildChunkMesh(const Chunk& chunk, const World& world) {
 	};
 
 	// Texture coordinates
-	auto GetFaceUVs = [](const Voxel& voxel, int face) -> const std::array<glm::vec2, 4>{
+	auto GetFaceUVs = [](const Voxel& voxel, int face, bool grass) -> const std::array<glm::vec2, 4>{
 		BlockTextureSet tileIndex = Texture::GetBlockTexture(voxel.type);
+		if(grass) tileIndex = Texture::GetBlockTexture(2);
 		switch (face) {
 			case 0: return tileIndex.top;
 			case 1: return tileIndex.bottom;
@@ -158,11 +159,16 @@ void Renderer::BuildChunkMesh(const Chunk& chunk, const World& world) {
 				glm::ivec3 posInChunk = { x,y,z };
 				for (int face = 0; face < 6; ++face) {
 					glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
+					bool grass = false;
 					if (world.IsVoxelSolidAt(neighborPos)) {
 						continue;
 					}
+					if (face == 0 && voxel.type == 1) {
+						grass = true;
+					}
+
 					const glm::vec3 voxelCenter = glm::vec3(x + 0.5f, y + 0.5f, z + 0.5f);
-					const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face);
+					const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face, grass);
 					for (int i = 0; i < 4; ++i) {
 						Vertex v;
 						v.position = faceOffsets[face][i] + voxelCenter;

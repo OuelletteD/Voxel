@@ -4,7 +4,7 @@
 #include <glm.hpp>
 #include <array>
 #include <unordered_map>
-#include "Config.h";
+#include "Config.h"
 
 struct BlockTextureSet {
 	std::array<glm::vec2, 4> top;

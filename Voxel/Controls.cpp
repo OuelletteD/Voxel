@@ -36,8 +36,8 @@ void Controls::ProcessKeyboard(GLFWwindow* window) {
 }
 
 void Controls::ProcessMouse(double xpos, double ypos) {
-    float xoffset = xpos - lastX;
-    float yoffset = ypos - lastY;
+    double xoffset = xpos - lastX;
+    double yoffset = ypos - lastY;
     
     lastX = xpos;
     lastY = ypos;
@@ -53,8 +53,8 @@ void Controls::ProcessMouseMovement(double xoffset, double yoffset) {
     camera.yaw += xoffset;
     camera.pitch -= yoffset;
 
-    float yaw = camera.yaw;
-    float pitch = camera.pitch;
+    double yaw = camera.yaw;
+    double pitch = camera.pitch;
 
     if (pitch > 89.0f) {
         camera.pitch = 89.0f;
@@ -68,7 +68,7 @@ void Controls::ProcessMouseMovement(double xoffset, double yoffset) {
     UpdateCameraVectors(pitch, yaw);
 }
 
-void Controls::UpdateCameraVectors(float pitch, float yaw) {
+void Controls::UpdateCameraVectors(double pitch, double yaw) {
     glm::vec3 front;
     front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     front.y = sin(glm::radians(pitch));

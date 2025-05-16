@@ -18,7 +18,7 @@ public:
 	void ProcessKeyboard(GLFWwindow* window);
 	void ProcessMouse(double xpos, double ypos);
 	void ProcessMouseMovement(double xoffset, double yoffset);
-	void UpdateCameraVectors(float pitch, float yaw);
+	void UpdateCameraVectors(double pitch, double yaw);
 	void SetInitialMousePosition(float xpos, float ypos);
 
 private:

@@ -17,8 +17,8 @@ public:
 	void SetUp(const glm::vec3& newUp) { up = newUp; }
 
 	float cameraSpeed = 10.0f;
-	float yaw; //(left to right movement : pointing down -Z)
-	float pitch; //(Up down movement)
+	double yaw; //(left to right movement : pointing down -Z)
+	double pitch; //(Up down movement)
 	float fov;
 	glm::vec3 position;
 	glm::vec3 front;

@@ -8,8 +8,8 @@ class Renderer;
 
 class World {
 public:
-	Chunk& CreateChunk(int chunkX, int chunkY);
-	void Generate(int xChunks, int yChunks);
+	Chunk& CreateChunk(int chunkX, int chunkZ);
+	void Generate(int xChunks, int zChunks);
 	const bool IsVoxelSolidAt(const glm::ivec3& pos) const;
 	std::unordered_map<ChunkPosition, Chunk> chunks;
 };

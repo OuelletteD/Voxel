@@ -72,16 +72,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Daniel-PC\source\repos\Voxel\packages\freeglut\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -91,7 +91,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -110,7 +110,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +129,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,7 +148,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniel-PC\source\repos\Voxel\packages\glew\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\glm;C:\Users\Daniel-PC\source\repos\Voxel\packages\glfw\include;C:\Users\Daniel-PC\source\repos\Voxel\packages\stb;C:\Users\Daniel-PC\source\repos\Voxel\packages\PerlinNoise;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
