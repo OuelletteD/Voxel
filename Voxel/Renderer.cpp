@@ -31,6 +31,8 @@ bool Renderer::Initialize() {
 
 void Renderer::RenderChunk(Chunk& chunk, const World& world) {
 	if (chunk.chunkMesh.needsMeshUpdate) {
+		chunk.surfaceVoxels.clear();
+		chunk.surfaceSet.clear();
 		BuildChunkMesh(chunk, world);
 		chunk.chunkMesh.mesh.Upload(); // Send to GPU
 		chunk.chunkMesh.needsMeshUpdate = false;
@@ -95,44 +97,74 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 		for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
 			for (int z = 0; z < Config::CHUNK_SIZE; z++) {
 				const Voxel& voxel = chunk.voxels[x][y][z];
-				
 				if (voxel.type == 0) continue;
+				bool isSurface = false;
 				glm::ivec3 posInChunk = { x,y,z };
 				for (int face = 0; face < 6; ++face) {
 					glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
 					bool grass = false;
-					if (world.IsVoxelSolidAt(neighborPos)) {
-						continue;
+					if (!world.IsVoxelSolidAt(neighborPos)) {
+						isSurface = true;
+						break;
 					}
-					if (face == 0 && voxel.type == 1) {
-						grass = true;
-					}
-
-					const glm::vec3 voxelCenter = glm::vec3(x + 0.5f, y + 0.5f, z + 0.5f);
-					const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face, grass);
-					for (int i = 0; i < 4; ++i) {
-						Vertex v;
-						v.position = faceOffsets[face][i] + voxelCenter;
-						v.texCoord = faceUVs[i];
-						
-						vertices.push_back(v);
-					}
-
-					// Add indices for two triangles
-					indices.push_back(indexOffset + 0);
-					indices.push_back(indexOffset + 1);
-					indices.push_back(indexOffset + 2);
-
-					indices.push_back(indexOffset + 2);
-					indices.push_back(indexOffset + 3);
-					indices.push_back(indexOffset + 0);
-
-					indexOffset += 4;
 				}
+				if (isSurface) {
+					chunk.surfaceVoxels.push_back(posInChunk);
+					chunk.surfaceSet.insert(posInChunk);
+				}		
 			}
 		}
 	}
+	std::unordered_map<glm::ivec3, bool, ivec3_hash> lightingMap = CalculateLighting(world, chunk);
+
+	for (const glm::ivec3& posInChunk : chunk.surfaceVoxels) {
+		const Voxel& voxel = chunk.voxels[posInChunk.x][posInChunk.y][posInChunk.z];
+		if (voxel.type == 0) continue;
+		for (int face = 0; face < 6; ++face) {
+			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
+			if (world.IsVoxelSolidAt(neighborPos)) continue;
+			bool grass = (face == 0 && voxel.type == 1);
+			const glm::vec3 voxelCenter = glm::vec3(posInChunk) + glm::vec3(0.5f);
+			const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face, grass);
+			for (int i = 0; i < 4; ++i) {
+				Vertex v;
+				v.position = faceOffsets[face][i] + voxelCenter;
+				v.texCoord = faceUVs[i];
+				v.light = lightingMap[voxel.position] ? glm::vec4(1.0f) : glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
+				vertices.push_back(v);
+			}
+			// Add indices for two triangles
+			indices.push_back(indexOffset + 0);
+			indices.push_back(indexOffset + 1);
+			indices.push_back(indexOffset + 2);
+
+			indices.push_back(indexOffset + 2);
+			indices.push_back(indexOffset + 3);
+			indices.push_back(indexOffset + 0);
+
+			indexOffset += 4;
+		}
+	}
+
 	chunk.chunkMesh.mesh.SetData(vertices, indices);
+}
+
+std::unordered_map<glm::ivec3, bool, ivec3_hash> Renderer::CalculateLighting(const World& world, Chunk& chunk) {
+	std::unordered_map<glm::ivec3, bool, ivec3_hash> lightingMap;
+	glm::vec3 sunDir = glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f));
+	float maxDistance = 100.0f;
+	// Capture world pointer to check voxels
+	auto isSolidAt = [&](glm::ivec3 pos) -> bool {
+		return world.IsVoxelSolidAt(pos);
+	};
+	for (const auto& voxelPos : chunk.surfaceVoxels) {
+
+		glm::vec3 voxelCenter = (glm::vec3)voxelPos + glm::vec3(0.5f);
+		RaycastHit hit = VoxelRaycaster::RaycastVoxelWorld(voxelCenter, sunDir, maxDistance, isSolidAt);
+		bool lit = !hit.hit;
+		lightingMap[voxelPos] = lit;
+	}
+	return lightingMap;
 }
 
 void Renderer::RenderWorld(World& world) {

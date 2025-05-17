@@ -6,6 +6,7 @@
 #include "Shader.h"
 #include "World.h"
 #include "Texture.h"
+#include "VoxelRaycaster.h"
 
 const glm::ivec3 faceDirections[6] = {
 	{0, 1, 0},   // Top
@@ -25,6 +26,7 @@ public:
 	void RenderWorld(World& world);
 	void Cleanup();
 	void SetControls(Controls* c);
+	std::unordered_map<glm::ivec3, bool, ivec3_hash> CalculateLighting(const World& world, Chunk& chunk);
 
 private:
 	Texture texture;

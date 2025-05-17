@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
 
     glfwSetCursorPosCallback(window, mouse);
-    world.Generate(10,10);
+    world.Generate(2,2);
 
 
     double lastTime = glfwGetTime();
