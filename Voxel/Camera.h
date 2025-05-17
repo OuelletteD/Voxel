@@ -1,6 +1,6 @@
 #pragma once
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>  // For glm::lookAt and glm::perspective
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>  // For glm::lookAt and glm::perspective
 #include "ErrorLogger.h"
 
 class Camera {
@@ -23,4 +23,6 @@ public:
 	glm::vec3 position;
 	glm::vec3 front;
 	glm::vec3 up;
+	float nearPlane = 0.1f;
+	float farPlane = 1000.0f;
 };

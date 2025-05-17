@@ -20,16 +20,15 @@ class Renderer {
 public:
 	Renderer(Camera& cam) : camera(cam), texture("Terrain.png") {}
 	bool Initialize();
-	void RenderChunk(const Chunk& chunk, const World& world);
-	void BuildChunkMesh(const Chunk& chunk, const World& world);
-	void RenderWorld(const World& world);
+	void RenderChunk(Chunk& chunk, const World& world);
+	void BuildChunkMesh(Chunk& chunk, const World& world);
+	void RenderWorld(World& world);
 	void Cleanup();
 	void SetControls(Controls* c);
 
 private:
 	Texture texture;
 	Shader shader;
-	Mesh chunkMesh;
 	Camera& camera;
 	Controls* controls = nullptr;
 	GLuint constantBuffer = {};  // OpenGL uses UBOs for storing constant data

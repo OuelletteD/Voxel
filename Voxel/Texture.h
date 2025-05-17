@@ -1,7 +1,7 @@
 #pragma once
 #include <GL/glew.h>
 #include <string>
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include <array>
 #include <unordered_map>
 #include "Config.h"

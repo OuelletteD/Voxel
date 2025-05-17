@@ -1,8 +1,9 @@
 #pragma once
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include "Config.h"
 #include "ErrorLogger.h"
 #include "PerlinNoise.hpp"
+#include "Mesh.h"
 
 struct Voxel {
 	int type;
@@ -24,25 +25,35 @@ namespace std {
 	template <>
 	struct hash<ChunkPosition> {
 		size_t operator()(const ChunkPosition& pos) const {
-			size_t h1 = std::hash<int>()(pos.x);
-			size_t h2 = std::hash<int>()(pos.z);
-			return h1 ^ (h2 << 1);
+			size_t seed = std::hash<int>()(pos.x);
+			seed ^= std::hash<int>()(pos.z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			return seed;
 		}
 	};
 }
 
 class Chunk {
 public:
-	Voxel voxels[Config::CHUNK_SIZE][Config::CHUNK_SIZE][Config::CHUNK_SIZE];
+	Chunk() : perlin(Config::WOLRD_SEED) {}
+	Chunk(const Chunk&) = delete;
+	Chunk& operator=(const Chunk&) = delete;
+
+	// Enable moving:
+	Chunk(Chunk&&) = default;
+	Chunk& operator=(Chunk&&) = default;
+
+	Voxel voxels[Config::CHUNK_SIZE][Config::CHUNK_HEIGHT][Config::CHUNK_SIZE];
 	ChunkPosition chunkPosition;
+	ChunkMesh chunkMesh;
 
 	void Generate();
 	const Voxel* GetVoxel(int x, int y, int z) const;
+
+	int exampleData = 0;
+	
 private:
 	float CreatePerlinPoint(int x, int z);
-	const siv::PerlinNoise::seed_type seed = 12345;
-	const siv::PerlinNoise perlin{ seed };
-	const float amplitude = 0.03;
-	const float maxHeight = Config::CHUNK_HEIGHT;
-	const int octaves = 4;
+	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
+	const float amplitude = 0.0015;
+	const int octaves = 6;
 };

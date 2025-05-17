@@ -10,6 +10,15 @@ void Controls::UpdateDeltaTime() {
 
 void Controls::ProcessKeyboard(GLFWwindow* window) {
     float velocity = camera.cameraSpeed * deltaTime;
+
+    // Hold shift to move faster
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+        glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+    {
+        velocity *= 3.0f; // Adjust multiplier as needed
+    }
+
+
     glm::vec3 right = glm::normalize(glm::cross(camera.front, camera.up));
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.position += camera.front * velocity;
@@ -21,13 +30,10 @@ void Controls::ProcessKeyboard(GLFWwindow* window) {
         camera.position += right * velocity;
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
         camera.position += camera.up * velocity;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         camera.position -= camera.up * velocity;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-        ErrorLogger::Log(std::to_string(camera.front.x));
-        ErrorLogger::Log(std::to_string(camera.front.y));
-        ErrorLogger::Log(std::to_string(camera.front.z));
-    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        camera.position -= camera.up * velocity;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
         glfwSetInputMode(window, GLFW_CURSOR, (cursorLocked ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED));

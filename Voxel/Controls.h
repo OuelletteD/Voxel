@@ -1,8 +1,8 @@
 #pragma once
 #include "Camera.h"
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtc/constants.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
 #include <GLFW/glfw3.h>
 class Controls {
 public:

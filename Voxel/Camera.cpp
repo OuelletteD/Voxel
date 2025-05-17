@@ -8,5 +8,5 @@ glm::mat4 Camera::GetViewMatrix() const {
 glm::mat4 Camera::GetProjectionMatrix(float aspectRatio) const {
     // For perspective projection: 
     // OpenGL uses glm::perspective (left-handed coordinate system)
-    return glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);  // Near and far planes are set
+    return glm::perspective(glm::radians(45.0f), aspectRatio, nearPlane, farPlane);  // Near and far planes are set
 }
