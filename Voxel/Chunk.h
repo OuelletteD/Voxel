@@ -61,11 +61,11 @@ public:
 
 	int exampleData = 0;
 	std::vector<glm::ivec3> surfaceVoxels;
-	std::unordered_set<glm::ivec3, ivec3_hash> surfaceSet;
+	std::vector<glm::ivec3> surfaceVoxelGlobalPositions;
 	
 private:
 	float CreatePerlinPoint(int x, int z);
 	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
-	const float amplitude = 0.0015;
+	const float amplitude = 0.007;
 	const int octaves = 6;
 };

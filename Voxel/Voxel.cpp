@@ -49,20 +49,21 @@ int main(int argc, char** argv) {
     controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
 
     glfwSetCursorPosCallback(window, mouse);
-    world.Generate(2,2);
+    world.Generate(50,50);
 
 
     double lastTime = glfwGetTime();
     int frameCount = 0;
 
     while (!glfwWindowShouldClose(window)) {
-
-        frameCount++;
-        double currentTime = glfwGetTime();
-        if (currentTime - lastTime >= 1.0) { // If last update was more than 1 sec ago
-            printf("FPS: %d\n", frameCount);
-            frameCount = 0;
-            lastTime = currentTime;
+        if (Config::SHOW_FPS) {
+            frameCount++;
+            double currentTime = glfwGetTime();
+            if (currentTime - lastTime >= 1.0) { // If last update was more than 1 sec ago
+                printf("FPS: %d\n", frameCount);
+                frameCount = 0;
+                lastTime = currentTime;
+            }
         }
 
         controls.UpdateDeltaTime();

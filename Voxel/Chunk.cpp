@@ -13,11 +13,7 @@ void Chunk::Generate() {
 				} else if (y > 4 && y <= height) {
 					voxels[x][y][z].type = 1;  // Dirt
 				}
-				/*if (x == 5 && y == 5 && z == 5) {
-					voxels[x][y][z].type = ;  // stone
-				} else{
-					voxels[x][y][z].type = 0;  // Air
-				}*/
+
 				voxels[x][y][z].position = glm::ivec3(x + (Config::CHUNK_SIZE * chunkPosition.x), y, z + (Config::CHUNK_SIZE * chunkPosition.z));
 			}
 		}
