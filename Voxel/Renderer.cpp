@@ -26,7 +26,7 @@ bool Renderer::Initialize() {
 	return true;
 }
 
-void Renderer::RenderChunk(Chunk& chunk, const World& world) {
+void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Plane,6>& cameraPlanes) {
 	if (chunk.chunkMesh.needsMeshUpdate) {
 		chunk.surfaceVoxels.clear();
 		chunk.surfaceVoxelGlobalPositions.clear();
@@ -39,10 +39,15 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world) {
 		0.0f,
 		chunk.chunkPosition.z * Config::CHUNK_SIZE
 	};
+	glm::vec3 minBound = worldChunkPosition;
+	glm::vec3 maxBound = glm::vec3(worldChunkPosition.x + Config::CHUNK_SIZE, Config::CHUNK_HEIGHT, worldChunkPosition.z + Config::CHUNK_SIZE);
+	if (!IsChunkInFrustum(cameraPlanes, minBound, maxBound)) {
+		return;
+	}
 
 	// Create a model matrix for the voxel (positioned correctly in world space)
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), worldChunkPosition);
-	glm::mat4 projection = camera.GetProjectionMatrix(Config::SCREEN_WIDTH / Config::SCREEN_HEIGHT);
+	glm::mat4 projection = camera.GetProjectionMatrix();
 	glm::mat4 view = camera.GetViewMatrix();
 
 	glActiveTexture(GL_TEXTURE0);
@@ -62,7 +67,6 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world) {
 		glUniform1i(loc, 0);
 	}
 	chunk.chunkMesh.mesh.Render();
-
 }
 
 void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
@@ -155,8 +159,9 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 }
 
 void Renderer::RenderWorld(World& world) {
+	std::array<Plane, 6> cameraPlanes = camera.ExtractFrustumPlanes();
 	for (auto& [chunkPos, chunk] : world.chunks) {
-		RenderChunk(*chunk, world);
+		RenderChunk(*chunk, world, cameraPlanes);
 	}
 }
 

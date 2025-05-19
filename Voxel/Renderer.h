@@ -11,7 +11,7 @@ class Renderer {
 public:
 	Renderer(Camera& cam) : camera(cam), texture("Terrain.png") {}
 	bool Initialize();
-	void RenderChunk(Chunk& chunk, const World& world);
+	void RenderChunk(Chunk& chunk, const World& world, const std::array<Plane, 6>& cameraPlanes);
 	void BuildChunkMesh(Chunk& chunk, const World& world);
 	void RenderWorld(World& world);
 	void Cleanup();

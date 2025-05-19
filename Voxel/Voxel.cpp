@@ -16,6 +16,7 @@ World world;
 
 void display(GLFWwindow* window, World& world) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.52f, 0.8f, 0.92f, 1.0);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height); // Optional, good practice if window resizes
@@ -59,7 +60,7 @@ int main(int argc, char** argv) {
         if (Config::SHOW_FPS) {
             frameCount++;
             double currentTime = glfwGetTime();
-            if (currentTime - lastTime >= 1.0) { // If last update was more than 1 sec ago
+            if (currentTime - lastTime >= 1.0) { 
                 printf("FPS: %d\n", frameCount);
                 frameCount = 0;
                 lastTime = currentTime;

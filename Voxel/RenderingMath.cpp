@@ -30,6 +30,21 @@ std::unordered_map<glm::ivec3, bool, ivec3_hash> CalculateLighting(const World& 
 	}
 	return lightingMap;
 }
+
+bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3& min, const glm::vec3& max) {
+    for (const Plane& plane : planes) {
+        glm::vec3 p = min;
+        if (plane.normal.x >= 0) p.x = max.x;
+        if (plane.normal.y >= 0) p.y = max.y;
+        if (plane.normal.z >= 0) p.z = max.z;
+
+        if (plane.DistanceToPoint(p) < 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 AOOffsets aoTable[6][4] = {
     // 0: +Y (Top)
     {
