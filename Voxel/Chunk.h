@@ -4,6 +4,7 @@
 #include "ErrorLogger.h"
 #include "PerlinNoise.hpp"
 #include "Mesh.h"
+#include "unordered_set"
 
 struct Voxel {
 	int type;
@@ -32,6 +33,15 @@ namespace std {
 	};
 }
 
+struct ivec3_hash {
+	std::size_t operator()(const glm::ivec3& v) const noexcept {
+		std::size_t h1 = std::hash<int>{}(v.x);
+		std::size_t h2 = std::hash<int>{}(v.y);
+		std::size_t h3 = std::hash<int>{}(v.z);
+		return h1 ^ (h2 << 1) ^ (h3 << 2);
+	}
+};
+
 class Chunk {
 public:
 	Chunk() : perlin(Config::WOLRD_SEED) {}
@@ -50,10 +60,12 @@ public:
 	const Voxel* GetVoxel(int x, int y, int z) const;
 
 	int exampleData = 0;
+	std::vector<glm::ivec3> surfaceVoxels;
+	std::vector<glm::ivec3> surfaceVoxelGlobalPositions;
 	
 private:
 	float CreatePerlinPoint(int x, int z);
 	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
-	const float amplitude = 0.0015;
+	const float amplitude = 0.007;
 	const int octaves = 6;
 };

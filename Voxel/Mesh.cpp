@@ -17,9 +17,6 @@ bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const un
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);  // Bind the index buffer
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indexCount, indices, GL_STATIC_DRAW);  // Load data into the buffer
 
-    // Enable vertex attributes
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);  // Bind the vertex buffer to configure attributes
-
     // Position attribute: 3 floats starting at offset 0
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
@@ -27,6 +24,10 @@ bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const un
     // TexCoord attribute: 2 floats starting at offset after position
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
     glEnableVertexAttribArray(1);
+
+    // Light
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, light));
+    glEnableVertexAttribArray(2);
 
     // Unbind buffers and VAO
     glBindVertexArray(0);

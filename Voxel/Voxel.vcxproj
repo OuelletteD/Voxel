@@ -169,10 +169,12 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RenderingMath.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Voxel.h" />
+    <ClInclude Include="VoxelRaycaster.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
@@ -183,8 +185,10 @@
     <ClCompile Include="ErrorLogger.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderingMath.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="VoxelRaycaster.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="Voxel.cpp" />
   </ItemGroup>

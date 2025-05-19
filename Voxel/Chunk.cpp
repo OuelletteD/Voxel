@@ -14,6 +14,7 @@ void Chunk::Generate() {
 					voxels[x][y][z].type = 1;  // Dirt
 				}
 
+				voxels[x][y][z].position = glm::ivec3(x + (Config::CHUNK_SIZE * chunkPosition.x), y, z + (Config::CHUNK_SIZE * chunkPosition.z));
 			}
 		}
 	}
