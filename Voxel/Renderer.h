@@ -2,7 +2,6 @@
 #include <GL/glew.h>
 #include "Camera.h"
 #include "Controls.h"
-#include "Mesh.h"
 #include "Shader.h"
 #include "World.h"
 #include "Texture.h"

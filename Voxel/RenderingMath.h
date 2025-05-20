@@ -1,8 +1,8 @@
 #pragma once
 #include "glm/glm.hpp"
-#include "VoxelRaycaster.h"
 #include "World.h"
 #include "Camera.h"
+#include <functional>
 
 struct AOOffsets {
 	glm::ivec3 side1;

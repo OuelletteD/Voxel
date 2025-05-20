@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "ErrorLogger.h"
 
 bool Mesh::Initialize(const Vertex* vertices, unsigned int vertexCount, const unsigned int* indices, unsigned int indexCount) {
 	this->indexCount = indexCount;

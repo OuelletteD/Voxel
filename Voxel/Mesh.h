@@ -1,9 +1,6 @@
 #pragma once
 #include <GL/glew.h>
-#include "ErrorLogger.h"
 #include <glm/glm.hpp>        // Core GLM functionality
-#include <glm/gtc/matrix_transform.hpp> // Transformations like translation, rotation
-#include <glm/gtc/type_ptr.hpp>        // For accessing matrix data as pointers
 #include <vector>
 
 struct Vertex {

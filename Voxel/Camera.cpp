@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Config.h"
 
 glm::mat4 Camera::GetViewMatrix() const {
     return glm::lookAt(position, position + front, up);
@@ -8,6 +9,39 @@ glm::mat4 Camera::GetProjectionMatrix() const {
     float aspectRatio = Config::SCREEN_WIDTH / Config::SCREEN_HEIGHT;
     return glm::perspective(glm::radians(45.0f), aspectRatio, nearPlane, farPlane);
 }
+
+void Camera::UpdateFromPlayer(const Player& player, MouseDelta mouseDelta) {
+    UpdateCameraVectors(mouseDelta);
+    UpdateCameraPosition(player.GetPosition());
+}
+
+void Camera::UpdateCameraPosition(const glm::vec3 playerPosition) {
+    float eyeHeight = 1.7f;
+    position = playerPosition + glm::vec3(0.0f, eyeHeight, 0.0f);
+}
+
+void Camera::UpdateCameraVectors(MouseDelta mouseDelta) {
+    double _yaw = mouseDelta.yaw;
+    double _pitch = mouseDelta.pitch;
+
+    if (_pitch > 89.0f) {
+        _pitch = 89.0f;
+    }
+    if (_pitch < -89.0f) {
+        _pitch = -89.0f;
+    }
+
+    yaw = _yaw;
+    pitch = _pitch;
+
+    glm::vec3 newFront;
+    newFront.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+    newFront.y = sin(glm::radians(_pitch));
+    newFront.z = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+    front = glm::normalize(newFront);
+}
+
+
 std::array<Plane, 6> Camera::ExtractFrustumPlanes() {
     glm::mat4 vp = GetProjectionMatrix() * GetViewMatrix();
     std::array<Plane, 6> planes;

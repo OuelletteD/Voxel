@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include "Debugger.h"
 #include "RenderingMath.h"
+#include <glm/gtc/type_ptr.hpp>        // For accessing matrix data as pointers
+#include "ErrorLogger.h"
 
 bool Renderer::Initialize() {
 	if (!texture.Initialize()) {

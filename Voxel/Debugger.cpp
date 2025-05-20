@@ -1,4 +1,6 @@
 #include "Debugger.h"
+#include <GL/glew.h>
+#include <iostream>
 
 // Debug callback function
 void GLAPIENTRY OpenGLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,

@@ -1,6 +1,7 @@
 #include "RenderingMath.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
+#include "VoxelRaycaster.h"
 
 float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std::function<bool(glm::ivec3)> isSolidAt) {
     const AOOffsets& offsets = aoTable[faceIndex][cornerIndex];

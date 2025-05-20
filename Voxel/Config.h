@@ -12,5 +12,6 @@ namespace Config {
 	constexpr bool SUNLIGHT_ON = false;
 	constexpr bool SHOW_FPS = true;
 	constexpr bool AO_ENABLED = true;
+	constexpr bool TOGGLE_FLY = false;
 	inline siv::PerlinNoise::seed_type WOLRD_SEED = DEBUG_MODE ? 1000 :rand() % 1000;
 }

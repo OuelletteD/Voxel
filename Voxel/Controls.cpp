@@ -1,39 +1,15 @@
 #include "Controls.h"
-#include <string>
 #include "Config.h"
+#include <iostream>
 
-void Controls::UpdateDeltaTime() {
-    double currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-}
+void Controls::ProcessKeyboard(GLFWwindow* window, double deltaTime) {
+    input = {};
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.forward += 1;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.forward -= 1;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.right -= 1;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.right += 1;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.jump = true;
 
-void Controls::ProcessKeyboard(GLFWwindow* window) {
-    float velocity = camera.cameraSpeed * deltaTime;
-
-    // Hold shift to move faster
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
-    {
-        velocity *= 3.0f; // Adjust multiplier as needed
-    }
-
-
-    glm::vec3 right = glm::normalize(glm::cross(camera.front, camera.up));
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.position += camera.front * velocity;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.position -= camera.front * velocity;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.position -= right * velocity;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.position += right * velocity;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        camera.position += camera.up * velocity;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-        camera.position -= camera.up * velocity;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-        camera.position -= camera.up * velocity;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
         glfwSetInputMode(window, GLFW_CURSOR, (cursorLocked ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED));
@@ -47,39 +23,23 @@ void Controls::ProcessMouse(double xpos, double ypos) {
     
     lastX = xpos;
     lastY = ypos;
-
     ProcessMouseMovement(xoffset, yoffset);
 }
 
 void Controls::ProcessMouseMovement(double xoffset, double yoffset) {
-
     xoffset *= mouseSensitivity;
     yoffset *= mouseSensitivity;
+    mouseDelta.pitch -= yoffset;
+    mouseDelta.yaw += xoffset;
 
-    camera.yaw += xoffset;
-    camera.pitch -= yoffset;
-
-    double yaw = camera.yaw;
-    double pitch = camera.pitch;
-
-    if (pitch > 89.0f) {
-        camera.pitch = 89.0f;
-        pitch = 89.0f;
-    }
-    if (pitch < -89.0f) {
-        camera.pitch = -89.0f;
-        pitch = -89.0f;
-    }
-
-    UpdateCameraVectors(pitch, yaw);
 }
 
-void Controls::UpdateCameraVectors(double pitch, double yaw) {
-    glm::vec3 front;
-    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y = sin(glm::radians(pitch));
-    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    camera.front = glm::normalize(front);
+MovementInput Controls::GetMovementInput() {
+    return input;
+}
+
+MouseDelta Controls::GetMouseDelta() {
+    return mouseDelta;
 }
 
 void Controls::SetInitialMousePosition(float xpos, float ypos) {

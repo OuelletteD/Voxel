@@ -1,8 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>  // For glm::lookAt and glm::perspective
-#include "ErrorLogger.h"
-#include "Config.h"
+#include "Player.h"
+#include <array>
 
 struct Plane {
 	glm::vec3 normal;
@@ -21,13 +21,20 @@ public:
 
 	glm::mat4 GetViewMatrix() const;
 	glm::mat4 GetProjectionMatrix() const;
+	void UpdateFromPlayer(const Player& player, MouseDelta mouseDelta);
 
 	void SetPosition(const glm::vec3& newPosition) { position = newPosition; }
 	void SetFront(const glm::vec3& newLookAt) { front = newLookAt; }
 	void SetUp(const glm::vec3& newUp) { up = newUp; }
 	std::array<Plane, 6> ExtractFrustumPlanes();
 
-	float cameraSpeed = 10.0f;
+	glm::vec3 GetFront() const { return front; }
+	glm::vec3 GetRight() const { return glm::normalize(glm::cross(front, up)); }
+	glm::vec3 GetPosition() const { return position; }
+
+private:
+	void UpdateCameraPosition(glm::vec3);
+	void UpdateCameraVectors(MouseDelta mouseDelta);
 	double yaw; //(left to right movement : pointing down -Z)
 	double pitch; //(Up down movement)
 	float fov;

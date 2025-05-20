@@ -2,7 +2,6 @@
 #include "Chunk.h"
 #include <glm/glm.hpp>
 #include "Config.h"
-#include <memory>
 #include <unordered_map>
 
 class Renderer;
