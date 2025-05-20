@@ -9,7 +9,8 @@ void Controls::ProcessKeyboard(GLFWwindow* window, double deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.right -= 1;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.right += 1;
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.jump = true;
-
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.run = true;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE) input.run = false;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
         glfwSetInputMode(window, GLFW_CURSOR, (cursorLocked ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED));

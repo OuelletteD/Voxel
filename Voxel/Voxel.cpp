@@ -14,7 +14,7 @@ Camera camera(glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::ve
 Renderer renderer(camera);
 Controls controls;
 World world;
-Player player;
+Player player(world);
 int frameCount;
 double lastTime, currentTime;
 double deltaTime;
@@ -26,7 +26,7 @@ void display(GLFWwindow* window, World& world) {
     glClearColor(0.52f, 0.8f, 0.92f, 1.0);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height); // Optional, good practice if window resizes
+    glViewport(0, 0, width, height);
         
     renderer.RenderWorld(world);
 }
@@ -41,7 +41,7 @@ void UpdateDeltaTime() {
     if (Config::SHOW_FPS) {
         frameCount++;
         if (currentTime - lastFPSUpdate >= 1.0) {
-            //printf("FPS: %d\n", frameCount);  
+            printf("FPS: %d\n", frameCount);  
             frameCount = 0;
             lastFPSUpdate = currentTime;
         }
@@ -77,16 +77,16 @@ int main(int argc, char** argv) {
     deltaTime = 0.0;
     frameCount = 0;
 
-
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         UpdateDeltaTime();
-        controls.ProcessKeyboard(window, deltaTime);
-        player.UpdatePlayerMovement(deltaTime, controls.GetMovementInput(), camera.GetFront(), camera.GetRight());
-        camera.UpdateFromPlayer(player, controls.GetMouseDelta());
         display(window, world);
+        if (world.rendered) {
+            controls.ProcessKeyboard(window, deltaTime);
+            player.UpdatePlayerMovement(deltaTime, controls.GetMovementInput(), camera.GetFront(), camera.GetRight());
+            camera.UpdateFromPlayer(player, controls.GetMouseDelta());
+        }
         glfwSwapBuffers(window);
-
     }
     glfwDestroyWindow(window);
     glfwTerminate();

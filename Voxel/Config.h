@@ -5,7 +5,7 @@ namespace Config {
 	constexpr int CHUNK_SIZE = 16;
 	constexpr int CHUNK_HEIGHT = 64;
 	constexpr int PIXELS_PER_TEXTURE = 16;
-	constexpr float GRAVITY = 9.81;
+	constexpr float GRAVITY = 9.81f;
 	constexpr bool DEBUG_MODE = true;
 	constexpr int SCREEN_WIDTH = 1600;
 	constexpr int SCREEN_HEIGHT = 1200;
@@ -13,5 +13,6 @@ namespace Config {
 	constexpr bool SHOW_FPS = true;
 	constexpr bool AO_ENABLED = true;
 	constexpr bool TOGGLE_FLY = false;
+	constexpr float FOV = 70.0f;
 	inline siv::PerlinNoise::seed_type WOLRD_SEED = DEBUG_MODE ? 1000 :rand() % 1000;
 }

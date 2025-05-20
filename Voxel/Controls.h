@@ -8,6 +8,7 @@ struct MovementInput {
 	float forward = 0.0f; // -1 to 1
 	float right = 0.0f;   // -1 to 1
 	bool jump = false;
+	bool run = false;
 };
 
 struct MouseDelta {

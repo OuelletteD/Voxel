@@ -18,6 +18,7 @@ public:
 	void Generate(int xChunks, int zChunks);
 	const bool IsVoxelSolidAt(const glm::ivec3& pos) const;
 	std::unordered_map<ChunkPosition, std::unique_ptr<Chunk>> chunks;
+	bool rendered;
 };
 
 

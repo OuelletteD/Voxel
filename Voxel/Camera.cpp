@@ -7,7 +7,7 @@ glm::mat4 Camera::GetViewMatrix() const {
 
 glm::mat4 Camera::GetProjectionMatrix() const {
     float aspectRatio = Config::SCREEN_WIDTH / Config::SCREEN_HEIGHT;
-    return glm::perspective(glm::radians(45.0f), aspectRatio, nearPlane, farPlane);
+    return glm::perspective(glm::radians(Config::FOV), aspectRatio, nearPlane, farPlane);
 }
 
 void Camera::UpdateFromPlayer(const Player& player, MouseDelta mouseDelta) {
@@ -16,7 +16,7 @@ void Camera::UpdateFromPlayer(const Player& player, MouseDelta mouseDelta) {
 }
 
 void Camera::UpdateCameraPosition(const glm::vec3 playerPosition) {
-    float eyeHeight = 1.7f;
+    float eyeHeight = 1.62f;
     position = playerPosition + glm::vec3(0.0f, eyeHeight, 0.0f);
 }
 

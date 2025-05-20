@@ -1,10 +1,16 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "Controls.h"
+#include "world.h"
+
+struct AABB { //Axis aligned bounding box
+	glm::vec3 min;
+	glm::vec3 max;
+};
 
 class Player{
 public:
-	Player() : position(glm::vec3(0.0f, 24.0f, 0.0f)), velocity(0.0f), colliderSize(0.6, 1.8f, 0.6f) {}
+	Player(const World& worldRef) : position(glm::vec3(1.0f, 48.0f, 1.0f)), velocity(0.0f), world(worldRef) {}
 	void UpdatePlayerMovement(float deltaTime, const MovementInput& input, const glm::vec3& camFront, const glm::vec3& camRight);
 	
 	const glm::vec3 GetPosition() const;
@@ -14,7 +20,12 @@ private:
 	bool isGrounded;
 	glm::vec3 position;
 	glm::vec3 velocity;
-	glm::vec3 colliderSize;
+	const World& world;
+	AABB boundingBox;
 	float movementSpeed = 5.0f;
-	float jumpVelocity = 8.0f;
+	float jumpVelocity = 5.0f;
+
+	bool CheckCollision();
+	void UpdateBoundingBox();
+	void ResolveStuck();
 };
