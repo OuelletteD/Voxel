@@ -1,6 +1,4 @@
 #include "VoxelRaycaster.h"
-#include <string>
-#include <iostream>
 
 RaycastHit VoxelRaycaster::RaycastVoxelWorld(glm::vec3 origin,
 	glm::vec3 dir,

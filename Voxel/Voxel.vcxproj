@@ -168,6 +168,7 @@
     <ClInclude Include="ErrorLogger.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderingMath.h" />
     <ClInclude Include="Resource.h" />
@@ -184,6 +185,7 @@
     <ClCompile Include="Debugger.cpp" />
     <ClCompile Include="ErrorLogger.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderingMath.cpp" />
     <ClCompile Include="Shader.cpp" />

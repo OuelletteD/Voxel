@@ -1,10 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "Config.h"
-#include "ErrorLogger.h"
 #include "PerlinNoise.hpp"
 #include "Mesh.h"
-#include "unordered_set"
 
 struct Voxel {
 	int type;

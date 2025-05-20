@@ -7,25 +7,46 @@
 #include "Controls.h"
 #include "Config.h"
 #include "Debugger.h"
+#include "Player.h"
 
 Shader shader;
 Camera camera(glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 Renderer renderer(camera);
-Controls controls(camera);
+Controls controls;
 World world;
+Player player(world);
+int frameCount;
+double lastTime, currentTime;
+double deltaTime;
+double lastFPSUpdate = 0.0;
+
 
 void display(GLFWwindow* window, World& world) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.52f, 0.8f, 0.92f, 1.0);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height); // Optional, good practice if window resizes
+    glViewport(0, 0, width, height);
         
     renderer.RenderWorld(world);
 }
 
 void mouse(GLFWwindow* window, double x, double y) {
     controls.ProcessMouse(x, y);
+}
+
+void UpdateDeltaTime() {
+    currentTime = glfwGetTime();
+    deltaTime = currentTime - lastTime;
+    if (Config::SHOW_FPS) {
+        frameCount++;
+        if (currentTime - lastFPSUpdate >= 1.0) {
+            printf("FPS: %d\n", frameCount);  
+            frameCount = 0;
+            lastFPSUpdate = currentTime;
+        }
+    }
+    lastTime = currentTime;
 }
 
 int main(int argc, char** argv) {
@@ -50,28 +71,22 @@ int main(int argc, char** argv) {
     controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
 
     glfwSetCursorPosCallback(window, mouse);
-    world.Generate(50,50);
+    world.Generate(10,10);
 
-
-    double lastTime = glfwGetTime();
-    int frameCount = 0;
+    lastTime, currentTime = glfwGetTime();
+    deltaTime = 0.0;
+    frameCount = 0;
 
     while (!glfwWindowShouldClose(window)) {
-        if (Config::SHOW_FPS) {
-            frameCount++;
-            double currentTime = glfwGetTime();
-            if (currentTime - lastTime >= 1.0) { 
-                printf("FPS: %d\n", frameCount);
-                frameCount = 0;
-                lastTime = currentTime;
-            }
-        }
-
-        controls.UpdateDeltaTime();
-        controls.ProcessKeyboard(window);
-        display(window, world);
-        glfwSwapBuffers(window);
         glfwPollEvents();
+        UpdateDeltaTime();
+        display(window, world);
+        if (world.rendered) {
+            controls.ProcessKeyboard(window, deltaTime);
+            player.UpdatePlayerMovement(deltaTime, controls.GetMovementInput(), camera.GetFront(), camera.GetRight());
+            camera.UpdateFromPlayer(player, controls.GetMouseDelta());
+        }
+        glfwSwapBuffers(window);
     }
     glfwDestroyWindow(window);
     glfwTerminate();

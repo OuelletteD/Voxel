@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include "Debugger.h"
 #include "RenderingMath.h"
+#include <glm/gtc/type_ptr.hpp>        // For accessing matrix data as pointers
+#include "ErrorLogger.h"
 
 bool Renderer::Initialize() {
 	if (!texture.Initialize()) {
@@ -119,10 +121,13 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 	for (const glm::ivec3& posInChunk : chunk.surfaceVoxels) {
 		const Voxel& voxel = chunk.voxels[posInChunk.x][posInChunk.y][posInChunk.z];
 		if (voxel.type == 0) continue;
+		bool grass = false;
 		for (int face = 0; face < 6; ++face) {
 			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
 			if (world.IsVoxelSolidAt(neighborPos)) continue;
-			bool grass = (face == 0 && voxel.type == 1);
+			if (face == 0 && voxel.type == 1) {
+				grass = true;
+			}
 			const glm::vec3 voxelCenter = glm::vec3(posInChunk) + glm::vec3(0.5f);
 			const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face, grass);
 			for (int i = 0; i < 4; ++i) {
@@ -163,6 +168,7 @@ void Renderer::RenderWorld(World& world) {
 	for (auto& [chunkPos, chunk] : world.chunks) {
 		RenderChunk(*chunk, world, cameraPlanes);
 	}
+	if (!world.rendered) world.rendered = true;
 }
 
 void Renderer::SetControls(Controls* c) {

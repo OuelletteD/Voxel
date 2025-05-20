@@ -1,35 +1,38 @@
 #pragma once
-#include "Camera.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/constants.hpp>
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+struct MovementInput {
+	float forward = 0.0f; // -1 to 1
+	float right = 0.0f;   // -1 to 1
+	bool jump = false;
+	bool run = false;
+};
+
+struct MouseDelta {
+	float pitch = 0.0f;
+	float yaw = 0.0f;
+};
+
 class Controls {
 public:
-	Controls(Camera& cam) : 
-		camera(cam),
-		lastX(400),
-		lastY(300),
-		firstMouse(true),
-		deltaTime(0.0),
-		lastFrame(0.0),
-		mouseSensitivity(0.03f) {};
-	void UpdateDeltaTime();
-	void ProcessKeyboard(GLFWwindow* window);
+	void ProcessKeyboard(GLFWwindow* window, double deltaTime);
 	void ProcessMouse(double xpos, double ypos);
 	void ProcessMouseMovement(double xoffset, double yoffset);
-	void UpdateCameraVectors(double pitch, double yaw);
+	MouseDelta GetMouseDelta();
 	void SetInitialMousePosition(float xpos, float ypos);
+	MovementInput GetMovementInput();
 
 private:
-	Camera& camera;
+	MovementInput input;
+	MouseDelta mouseDelta;
 	float lastX;
 	float lastY;
 	bool firstMouse;
 
-	double deltaTime;
-	double lastFrame;
-
-	float mouseSensitivity;
+	float mouseSensitivity = 0.03;
 	bool cursorLocked = false;
+
 };
