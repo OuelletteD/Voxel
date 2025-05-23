@@ -86,6 +86,10 @@ const glm::vec3 Player::GetPosition() const {
 	return position;
 }
 
+void Player::SetPosition(glm::vec3 pos) {
+	position = pos;
+}
+
 void Player::UpdateBoundingBox() {
 	glm::vec3 halfSize = glm::vec3(0.3f, 1.8f, 0.3f);
 	boundingBox.min = position + glm::vec3(-halfSize.x, 0.0f, -halfSize.z);

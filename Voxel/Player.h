@@ -10,10 +10,11 @@ struct AABB { //Axis aligned bounding box
 
 class Player{
 public:
-	Player(const World& worldRef) : position(glm::vec3(1.0f, 48.0f, 1.0f)), velocity(0.0f), world(worldRef) {}
+	Player(const World& worldRef) : position(glm::vec3(1.0f, 58.0f, 1.0f)), velocity(0.0f), world(worldRef) {}
 	void UpdatePlayerMovement(float deltaTime, const MovementInput& input, const glm::vec3& camFront, const glm::vec3& camRight);
 	
 	const glm::vec3 GetPosition() const;
+	void SetPosition(glm::vec3 pos);
 
 private:
 	void ApplyPhysics(double deltaTime);

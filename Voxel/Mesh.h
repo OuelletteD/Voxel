@@ -38,7 +38,7 @@ public:
 struct ChunkMesh {
 	Mesh mesh;
 	bool needsMeshUpdate = true;
-
+	bool isUploaded = false;
 	ChunkMesh() = default;
 
 	ChunkMesh(const ChunkMesh&) = delete;

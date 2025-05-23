@@ -166,6 +166,7 @@
     <ClInclude Include="Controls.h" />
     <ClInclude Include="Debugger.h" />
     <ClInclude Include="ErrorLogger.h" />
+    <ClInclude Include="MainThreadDispatcher.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Player.h" />
@@ -174,6 +175,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Voxel.h" />
     <ClInclude Include="VoxelRaycaster.h" />
     <ClInclude Include="World.h" />
@@ -190,6 +192,7 @@
     <ClCompile Include="RenderingMath.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="VoxelRaycaster.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="Voxel.cpp" />
@@ -204,6 +207,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="ThreadPool.inl" />
     <None Include="Voxel.aps" />
   </ItemGroup>
   <ItemGroup>

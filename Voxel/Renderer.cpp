@@ -32,10 +32,19 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 	if (chunk.chunkMesh.needsMeshUpdate) {
 		chunk.surfaceVoxels.clear();
 		chunk.surfaceVoxelGlobalPositions.clear();
-		BuildChunkMesh(chunk, world);
-		chunk.chunkMesh.mesh.Upload(); // Send to GPU
-		chunk.chunkMesh.needsMeshUpdate = false;
+		ChunkPosition pos = chunk.chunkPosition;
+		std::shared_ptr<Chunk> chunkPtr = world.chunks.at(pos);
+
+		if (!world.rendered) {
+			chunkPtr->chunkMesh.needsMeshUpdate = false;
+			BuildChunkMesh(*chunkPtr, world);
+			chunkPtr->chunkMesh.mesh.Upload();
+			chunkPtr->chunkMesh.isUploaded = true;
+		} else {
+			UpdateChunkMeshAsync(chunkPtr, world);
+		}
 	}
+	if (!chunk.chunkMesh.isUploaded) return;
 	glm::vec3 worldChunkPosition = {
 		chunk.chunkPosition.x * Config::CHUNK_SIZE,
 		0.0f,
@@ -169,6 +178,19 @@ void Renderer::RenderWorld(World& world) {
 		RenderChunk(*chunk, world, cameraPlanes);
 	}
 	if (!world.rendered) world.rendered = true;
+}
+
+void Renderer::UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World& world) {
+	chunkPtr->chunkMesh.needsMeshUpdate = false;
+
+	// Enqueue the CPU heavy mesh build on thread pool
+	threadPool.enqueue([this, chunkPtr, &world]() {
+		BuildChunkMesh(*chunkPtr, world);
+		mtd.Enqueue([chunkPtr]() { //Pass to main thread
+			chunkPtr->chunkMesh.mesh.Upload();
+			chunkPtr->chunkMesh.isUploaded = true;
+		});
+	});
 }
 
 void Renderer::SetControls(Controls* c) {
