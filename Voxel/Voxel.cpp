@@ -114,8 +114,6 @@ int main(int argc, char** argv) {
     world.FinalizeChunkBatch();
     lastTime, currentTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        int clq = world.prioritizedLoadQueue.size();
-        if(clq > 0 ) ErrorLogger::Log(std::to_string(world.prioritizedLoadQueue.size()));
         if (!world.generated) continue;
         glfwPollEvents();
         UpdateDeltaTime();

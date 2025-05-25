@@ -128,7 +128,6 @@ void World::FinalizeChunkBatch() {
 		for (auto& [pos, entry] : chunksPendingBatch) {
 			//promotableChunks.push_back(pos);
 			if (AllNeighborsReady(pos)) {
-				std::cout << "Promoting chunk" << std::endl;
 				promotableChunks.push_back(pos);
 			} else {
 				auto elapsed = now - entry.timeAdded;
