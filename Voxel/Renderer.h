@@ -27,4 +27,5 @@ private:
 	GLuint viewMatrixLocation = {};  // Location for the view matrix in the shader
 	ThreadPool& threadPool;
 	MainThreadDispatcher& mtd;
+	void RerenderSurroundingChunks(Chunk& chunk, const World& world);
 };

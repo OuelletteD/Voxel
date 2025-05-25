@@ -74,6 +74,8 @@ public:
 private:
 	float CreatePerlinPoint(int x, int z);
 
-	const float amplitude = 0.0025;
+	const float amplitude = 0.004;
 	const int octaves = 6;
+	int GetHeightAt(int x, int z);
+	float CalculateSlope(int x, int z);
 };

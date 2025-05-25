@@ -12,7 +12,11 @@ public:
 	explicit ThreadPool(size_t threadCount = std::thread::hardware_concurrency());
 	~ThreadPool();
 	template<typename F>
-	void enqueue(F&& tasK);
+	std::future<void> enqueue(F&& tasK);
+	int GetPendingTaskCount() {
+		std::unique_lock<std::mutex> lock(queueMutex);
+		return static_cast<int>(tasks.size());
+	}
 private:
 	std::vector<std::thread> workers;
 	std::queue<std::function<void()>> tasks;

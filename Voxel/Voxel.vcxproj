@@ -162,6 +162,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Chunk.h" />
+    <ClInclude Include="ChunkStatus.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Controls.h" />
     <ClInclude Include="Debugger.h" />

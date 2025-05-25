@@ -3,6 +3,7 @@
 #include "RenderingMath.h"
 #include <glm/gtc/type_ptr.hpp>        // For accessing matrix data as pointers
 #include "ErrorLogger.h"
+#include "ChunkStatus.h"
 
 bool Renderer::Initialize() {
 	if (!texture.Initialize()) {
@@ -29,22 +30,28 @@ bool Renderer::Initialize() {
 }
 
 void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Plane,6>& cameraPlanes) {
-	if (chunk.chunkMesh.needsMeshUpdate) {
-		chunk.surfaceVoxels.clear();
-		chunk.surfaceVoxelGlobalPositions.clear();
+	enum ChunkStatus chunkStatus = GetChunkStatus(chunk);
+
+	if (chunkStatus != Ready && chunkStatus != Rerendering){
+		if (chunkStatus == NewChunkRendering) return; //In async, waiting for return.
 		ChunkPosition pos = chunk.chunkPosition;
 		std::shared_ptr<Chunk> chunkPtr = world.chunks.at(pos);
-
 		if (!world.rendered) {
-			chunkPtr->chunkMesh.needsMeshUpdate = false;
 			BuildChunkMesh(*chunkPtr, world);
+			
 			chunkPtr->chunkMesh.mesh.Upload();
-			chunkPtr->chunkMesh.isUploaded = true;
+			chunkPtr->chunkMesh.needsMeshUpdate = false;
+			chunkPtr->chunkMesh.isUpdating = false;
+			chunkPtr->chunkMesh.isNewChunk = false;
 		} else {
+			if (chunkStatus == NewChunk) {
+				RerenderSurroundingChunks(chunk, world);
+			}
+			chunkPtr->chunkMesh.isUpdating = true;
 			UpdateChunkMeshAsync(chunkPtr, world);
 		}
+		if(chunkStatus != WaitingForRerender) return; //No available mesh yet.
 	}
-	if (!chunk.chunkMesh.isUploaded) return;
 	glm::vec3 worldChunkPosition = {
 		chunk.chunkPosition.x * Config::CHUNK_SIZE,
 		0.0f,
@@ -83,11 +90,10 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+	std::array<const Chunk*, 3 * 3> localChunkCache = { nullptr };
 	unsigned int indexOffset = 0;
-	auto isSolidAt = [&](glm::ivec3 pos) -> bool {
-		return world.IsVoxelSolidAt(pos);
-	};
-
+	chunk.surfaceVoxels.clear();
+	chunk.surfaceVoxelGlobalPositions.clear();
 	// Texture coordinates
 	auto GetFaceUVs = [](const Voxel& voxel, int face, bool grass) -> const std::array<glm::vec2, 4>{
 		BlockTextureSet tileIndex = Texture::GetBlockTexture(voxel.type);
@@ -98,6 +104,43 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 			default: return tileIndex.side;
 		}
 	};
+
+	auto ChunkToIndex = [](int dx, int dz) -> int {
+		return (dx + 1) + (dz + 1) * 3;
+	};
+
+	{
+		std::shared_lock lock(world.chunkMutex);
+		// Fill the cache with nearby chunks
+		for (int dz = -1; dz <= 1; ++dz) {
+			for (int dx = -1; dx <= 1; ++dx) {
+				ChunkPosition neighborPos = chunk.chunkPosition + ChunkPosition{ dx, dz };
+				auto it = world.chunks.find(neighborPos);
+				if (it != world.chunks.end()) {
+					localChunkCache[ChunkToIndex(dx, dz)] = it->second.get();
+				}
+			}
+		}
+	}
+
+	auto IsVoxelSolidCached = [&](const glm::ivec3& pos) -> bool {
+		if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return false;
+
+		ChunkPosition targetChunk = world.GetChunkPositionFromCoordinates(pos);
+		glm::ivec2 delta = glm::ivec2(targetChunk.x - chunk.chunkPosition.x,
+			targetChunk.z - chunk.chunkPosition.z);
+
+		if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
+
+		const Chunk* chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
+		if (!chunk) return false;
+
+		glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);
+		const Voxel* voxel = chunk->GetVoxel(localPos.x, localPos.y, localPos.z);
+		return voxel && voxel->type != 0;
+	};
+
+
 	
 	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
 		for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
@@ -109,7 +152,7 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 				for (int face = 0; face < 6; ++face) {
 					glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
 					bool grass = false;
-					if (!world.IsVoxelSolidAt(neighborPos)) {
+					if (!IsVoxelSolidCached(neighborPos)) {
 						isSurface = true;
 						break;
 					}
@@ -123,9 +166,6 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 		}
 	}
 	std::unordered_map<glm::ivec3, bool, ivec3_hash> lightingMap;
-	if (Config::SUNLIGHT_ON) {
-		std::unordered_map<glm::ivec3, bool, ivec3_hash> lightingMap = CalculateLighting(world, chunk, isSolidAt);
-	}
 
 	for (const glm::ivec3& posInChunk : chunk.surfaceVoxels) {
 		const Voxel& voxel = chunk.voxels[posInChunk.x][posInChunk.y][posInChunk.z];
@@ -133,7 +173,7 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 		bool grass = false;
 		for (int face = 0; face < 6; ++face) {
 			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
-			if (world.IsVoxelSolidAt(neighborPos)) continue;
+			if (IsVoxelSolidCached(neighborPos)) continue;
 			if (face == 0 && voxel.type == 1) {
 				grass = true;
 			}
@@ -144,11 +184,8 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 				v.position = faceOffsets[face][i] + voxelCenter;
 				v.texCoord = faceUVs[i];
 
-				if (Config::SUNLIGHT_ON) {
-					v.light = lightingMap[voxel.position] ? glm::vec4(1.0f) : glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
-					
-				} else if(Config::AO_ENABLED == true){
-					float ao = calculateAOFactor(face, i, voxel.position, isSolidAt);
+				if(Config::AO_ENABLED == true){
+					float ao = calculateAOFactor(face, i, voxel.position, IsVoxelSolidCached);
 					v.light = glm::vec4(ao, ao, ao, 1.0f);
 				} else {
 					//No lighting
@@ -181,16 +218,35 @@ void Renderer::RenderWorld(World& world) {
 }
 
 void Renderer::UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World& world) {
-	chunkPtr->chunkMesh.needsMeshUpdate = false;
 
 	// Enqueue the CPU heavy mesh build on thread pool
 	threadPool.enqueue([this, chunkPtr, &world]() {
 		BuildChunkMesh(*chunkPtr, world);
 		mtd.Enqueue([chunkPtr]() { //Pass to main thread
-			chunkPtr->chunkMesh.mesh.Upload();
-			chunkPtr->chunkMesh.isUploaded = true;
+			chunkPtr->chunkMesh.mesh.Upload();			
+			chunkPtr->chunkMesh.needsMeshUpdate = false;
+			chunkPtr->chunkMesh.isUpdating = false;
+			chunkPtr->chunkMesh.isNewChunk = false;
 		});
 	});
+}
+
+void Renderer::RerenderSurroundingChunks(Chunk& chunk, const World& world) {
+	for (int x = -1; x < 2; x++) {
+		for (int z = -1; z < 2; z++) {
+			if (x == 0 && z == 0) continue;
+			ChunkPosition chunkPosition = chunk.chunkPosition + ChunkPosition{x, z};
+			std::unique_lock lock(world.chunkMutex);
+			auto it = world.chunks.find(chunkPosition);
+			if (it != world.chunks.end()) {
+				Chunk& neighborChunk = *(it->second);
+				ChunkStatus neighborStatus = GetChunkStatus(neighborChunk);
+				if (neighborStatus == Ready || neighborStatus == Rerendering) {
+					neighborChunk.chunkMesh.needsMeshUpdate = true;
+				}
+			}
+		}
+	}
 }
 
 void Renderer::SetControls(Controls* c) {

@@ -53,12 +53,11 @@ void UpdateDeltaTime() {
 }
 
 void SpawnPlayer() {
-    auto result = world.GetPositionAtXZ(0,0);
+    auto result = world.GetSpawn(0,0);
     if (result) {
-        glm::ivec3 foundPosition = *result;
-        player.SetPosition(glm::vec3(foundPosition.x + 0.5f, foundPosition.y + 1, foundPosition.z + 0.5f));
-    }
-    else {
+        glm::vec3 foundSpawn = *result;
+        player.SetPosition(foundSpawn);
+    } else {
         ErrorLogger::LogError("Failed to find a valid spawn");
     }
     playerPlaced = true;
@@ -66,19 +65,22 @@ void SpawnPlayer() {
 
 void CheckChunkGenerationRequired() {
     ChunkPosition playerChunk = world.GetChunkPositionFromPlayerCoordinates(player.GetPosition());
-    std::lock_guard<std::mutex> lock(world.chunkLoadQueueMutex);
-
-    {
-        for (int dx = -Config::CHUNK_LOAD_RADIUS; dx <= Config::CHUNK_LOAD_RADIUS; dx++) {
-            for (int dz = -Config::CHUNK_LOAD_RADIUS; dz <= Config::CHUNK_LOAD_RADIUS; dz++) {
-                ChunkPosition checkPosition = playerChunk + ChunkPosition(dx, dz);
-                {
-                    std::lock_guard<std::mutex> chunkLock(world.chunkMutex);
-                    bool chunkExists = world.chunks.find(checkPosition) != world.chunks.end();
-                    bool isGenerating = world.chunksBeingGenerated.contains(checkPosition);
-                    if (chunkExists || isGenerating) continue;
+    for (int dx = -Config::CHUNK_LOAD_RADIUS; dx <= Config::CHUNK_LOAD_RADIUS; dx++) {
+        for (int dz = -Config::CHUNK_LOAD_RADIUS; dz <= Config::CHUNK_LOAD_RADIUS; dz++) {
+            int distance = (abs(dx) + abs(dz));
+            if ((abs(dx) + abs(dz)) == 0) continue;
+            ChunkPosition checkPosition = playerChunk + ChunkPosition(dx, dz);
+            {
+                std::lock_guard<std::mutex> chunkLock(world.chunksGeneratedMutex);
+                
+                if (world.chunks.count(checkPosition) > 0 || world.chunksBeingGenerated.contains(checkPosition)) {
+                    continue;
                 }
-                world.chunkLoadQueue.push(checkPosition);
+                world.chunksBeingGenerated.insert(checkPosition);
+            }
+            {
+                std::lock_guard<std::mutex> lock(world.priorityLoadQueueMutex);
+                world.prioritizedLoadQueue.push_back(checkPosition);
             }
         }
     }
@@ -109,8 +111,12 @@ int main(int argc, char** argv) {
     controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
     glfwSetCursorPosCallback(window, mouse);
     world.Generate(Config::SQRT_CHUNKS_TO_CREATE);
+    world.FinalizeChunkBatch();
     lastTime, currentTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
+        int clq = world.prioritizedLoadQueue.size();
+        if(clq > 0 ) ErrorLogger::Log(std::to_string(world.prioritizedLoadQueue.size()));
+        if (!world.generated) continue;
         glfwPollEvents();
         UpdateDeltaTime();
         display(window, world);
@@ -121,7 +127,8 @@ int main(int argc, char** argv) {
             camera.UpdateFromPlayer(player, controls.GetMouseDelta());
         }
         CheckChunkGenerationRequired();
-        world.ProcessChunkLoadQueue(1);
+        world.ProcessChunkLoadQueue(player.GetChunk(), 2);
+        world.FinalizeChunkBatch();
         mtd.Process();
         glfwSwapBuffers(window);
     }
