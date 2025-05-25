@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "PerlinNoise.hpp"
 #include "Mesh.h"
+#include "string"
 
 struct Voxel {
 	int type;
@@ -18,6 +19,14 @@ struct ChunkPosition {
 		glm::ivec3 newValue = { x * multiplier, 0, z * multiplier};
 		return newValue;
 	}
+	std::string ToString() const {
+		return "(" + std::to_string(x) + ", " + std::to_string(z) + ")";
+	}
+	ChunkPosition operator+(const ChunkPosition other) const {
+		return ChunkPosition{ x + other.x, z + other.z };
+	}
+	ChunkPosition() {};
+	ChunkPosition(int x, int z) : x(x), z(z) {}
 };
 
 namespace std {
@@ -60,10 +69,13 @@ public:
 	int exampleData = 0;
 	std::vector<glm::ivec3> surfaceVoxels;
 	std::vector<glm::ivec3> surfaceVoxelGlobalPositions;
+	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
 	
 private:
 	float CreatePerlinPoint(int x, int z);
-	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
-	const float amplitude = 0.007;
+
+	const float amplitude = 0.004;
 	const int octaves = 6;
+	int GetHeightAt(int x, int z);
+	float CalculateSlope(int x, int z);
 };

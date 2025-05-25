@@ -54,6 +54,11 @@ void Player::ApplyPhysics(double deltaTime) {
 		velocity.z = 0;
 		UpdateBoundingBox();
 	}
+	ChunkPosition chunkPos = world.GetChunkPositionFromPlayerCoordinates(position);
+	if (chunkPos != chunkPosition) {
+		chunkPosition = chunkPos;
+		UpdateLocalChunks();
+	}
 }
 
 void Player::ResolveStuck() {
@@ -86,6 +91,11 @@ const glm::vec3 Player::GetPosition() const {
 	return position;
 }
 
+void Player::SetPosition(glm::vec3 pos) {
+	position = pos;
+	UpdateLocalChunks();
+}
+
 void Player::UpdateBoundingBox() {
 	glm::vec3 halfSize = glm::vec3(0.3f, 1.8f, 0.3f);
 	boundingBox.min = position + glm::vec3(-halfSize.x, 0.0f, -halfSize.z);
@@ -102,7 +112,7 @@ bool Player::CheckCollision() {
 	for (int x = xMin; x <= xMax; ++x) {
 		for (int y = yMin; y <= yMax; ++y) {
 			for (int z = zMin; z <= zMax; ++z) {
-				if (world.IsVoxelSolidAt(glm::ivec3(x, y, z))) {
+				if (IsVoxelSolidCached(glm::ivec3(x, y, z))) {
 					return true;
 				}
 			}
@@ -110,3 +120,46 @@ bool Player::CheckCollision() {
 	}
 	return false;
 }
+
+ChunkPosition Player::GetChunk() {
+	return chunkPosition;
+}
+
+void Player::UpdateLocalChunks() {
+	std::array<const Chunk*, Config::CHUNK_SIZE* Config::CHUNK_SIZE> templocalChunkCache = { nullptr };
+	
+	{
+		std::shared_lock lock(world.chunkMutex);
+		// Fill the cache with nearby chunks
+		for (int dz = -1; dz <= 1; ++dz) {
+			for (int dx = -1; dx <= 1; ++dx) {
+				ChunkPosition neighborPos = chunkPosition + ChunkPosition{ dx, dz };
+				auto it = world.chunks.find(neighborPos);
+				if (it != world.chunks.end()) {
+					templocalChunkCache[ChunkToIndex(dx, dz)] = it->second.get();
+				}
+			}
+		}
+	}
+	{
+		std::shared_lock lock(localChunkMutex);
+		localChunkCache = templocalChunkCache;
+	}
+}
+
+bool Player::IsVoxelSolidCached(const glm::ivec3& pos) const {
+	if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return false;
+
+	ChunkPosition targetChunk = world.GetChunkPositionFromCoordinates(pos);
+	glm::ivec2 delta = glm::ivec2(targetChunk.x - chunkPosition.x,
+		targetChunk.z - chunkPosition.z);
+
+	if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
+
+	const Chunk* chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
+	if (!chunk) return false;
+
+	glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);
+	const Voxel* voxel = chunk->GetVoxel(localPos.x, localPos.y, localPos.z);
+	return voxel && voxel->type != 0;
+};

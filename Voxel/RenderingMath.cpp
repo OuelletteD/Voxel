@@ -18,20 +18,6 @@ float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std
     return 1.0f - occlusion * 0.333f; // linear AO
 }
 
-std::unordered_map<glm::ivec3, bool, ivec3_hash> CalculateLighting(const World& world, Chunk& chunk, std::function<bool(glm::ivec3)> isSolidAt) {
-	std::unordered_map<glm::ivec3, bool, ivec3_hash> lightingMap;
-	glm::vec3 sunDir = glm::normalize(glm::vec3(2.0f, -5.0f, 0.0f));
-	float maxDistance = 100.0f;
-	// Capture world pointer to check voxels
-	for (const auto& voxelPos : chunk.surfaceVoxelGlobalPositions) {
-		glm::vec3 voxelCenter = (glm::vec3)voxelPos + glm::vec3(0.5f);
-		RaycastHit hit = VoxelRaycaster::RaycastVoxelWorld(voxelCenter, sunDir, maxDistance, isSolidAt);
-		bool lit = !hit.hit;
-		lightingMap[voxelPos] = lit;
-	}
-	return lightingMap;
-}
-
 bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3& min, const glm::vec3& max) {
     for (const Plane& plane : planes) {
         glm::vec3 p = min;
