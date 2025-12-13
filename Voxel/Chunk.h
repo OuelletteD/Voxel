@@ -72,10 +72,10 @@ public:
 	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
 	
 private:
-	float CreatePerlinPoint(int x, int z);
-
+	float CreatePerlinPoint(int x, int z, float frequency, int amplitude);
+	float CreateRidgeNoise(float x, float z, float frequency, int octaves);
 	const float amplitude = 0.004;
 	const int octaves = 6;
 	int GetHeightAt(int x, int z);
-	float CalculateSlope(int x, int z);
+	float CalculateSlopeFromMap(int x, int z, int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE]);
 };

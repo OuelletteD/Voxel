@@ -6,7 +6,7 @@ glm::mat4 Camera::GetViewMatrix() const {
 }
 
 glm::mat4 Camera::GetProjectionMatrix() const {
-    float aspectRatio = Config::SCREEN_WIDTH / Config::SCREEN_HEIGHT;
+    float aspectRatio = float(Config::SCREEN_WIDTH) / float(Config::SCREEN_HEIGHT);
     return glm::perspective(glm::radians(Config::FOV), aspectRatio, nearPlane, farPlane);
 }
 
