@@ -33,7 +33,7 @@ private:
 	void ResolveStuck();
 	void UpdateLocalChunks();
 	std::array<std::shared_ptr<Chunk>, Config::CHUNK_SIZE* Config::CHUNK_SIZE> localChunkCache = { nullptr };
-	bool IsVoxelSolidCached(const glm::ivec3& pos) const;
+	bool IsVoxelSolidCached(const glm::ivec3& pos, bool waterFalse = false) const;
 	static int ChunkToIndex(int dx, int dz) {
 		return (dx + 1) + (dz + 1) * 3;
 	}

@@ -112,7 +112,7 @@ bool Player::CheckCollision() {
 	for (int x = xMin; x <= xMax; ++x) {
 		for (int y = yMin; y <= yMax; ++y) {
 			for (int z = zMin; z <= zMax; ++z) {
-				if (IsVoxelSolidCached(glm::ivec3(x, y, z))) {
+				if (IsVoxelSolidCached(glm::ivec3(x, y, z), true)) {
 					return true;
 				}
 			}
@@ -147,12 +147,11 @@ void Player::UpdateLocalChunks() {
 	}
 }
 
-bool Player::IsVoxelSolidCached(const glm::ivec3& pos) const {
+bool Player::IsVoxelSolidCached(const glm::ivec3& pos, bool waterFalse) const {
 	if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return false;
 
 	ChunkPosition targetChunk = world.GetChunkPositionFromCoordinates(pos);
-	glm::ivec2 delta = glm::ivec2(targetChunk.x - chunkPosition.x,
-		targetChunk.z - chunkPosition.z);
+	glm::ivec2 delta = glm::ivec2(targetChunk.x - chunkPosition.x, targetChunk.z - chunkPosition.z);
 
 	if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
 
@@ -161,5 +160,9 @@ bool Player::IsVoxelSolidCached(const glm::ivec3& pos) const {
 
 	glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);
 	const Voxel* voxel = chunk->GetVoxel(localPos.x, localPos.y, localPos.z);
-	return voxel && voxel->type != 0;
+	if (!voxel) return false;
+	if (waterFalse) {
+		return voxel->type != 0 && voxel->type != 4;
+	}
+	return voxel->type != 0;
 };

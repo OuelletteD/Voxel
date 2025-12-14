@@ -34,21 +34,21 @@ void Chunk::Generate() {
 			bool highAltitudeRock = height >= rockLine;
 			for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
 				if (y > height) {
-					voxels[x][y][z].type = 0; // air
+					voxels[x][y][z].type = BlockType::Air; // air
 				}
 				else if (y == height) {
 					if (highAltitudeRock || cliffFactor > 0.75f) {
-						voxels[x][y][z].type = 3; // stone
+						voxels[x][y][z].type = BlockType::Stone; // stone
 					}
 					else {
-						voxels[x][y][z].type = 1; // grass
+						voxels[x][y][z].type = BlockType::Grass; // grass
 					}
 				}
 				else if (y >= height - dirtDepth && cliffFactor <= 0.75f) {
-					voxels[x][y][z].type = 1; // dirt
+					voxels[x][y][z].type = BlockType::Dirt; // dirt
 				}
 				else {
-					voxels[x][y][z].type = 3; // stone
+					voxels[x][y][z].type = BlockType::Stone; // stone
 				}
 
 				voxels[x][y][z].position = glm::ivec3(worldX, y, worldZ);
@@ -61,7 +61,7 @@ void Chunk::Generate() {
 			int worldX = x + (Config::CHUNK_SIZE * chunkPosition.x);
 			int worldZ = z + (Config::CHUNK_SIZE * chunkPosition.z);
 			for (int y = terrainHeight + 1; y <= seaLevel; y++) {
-				voxels[x][y][z].type = 4; //water
+				voxels[x][y][z].type = BlockType::Water; //water
 			}
 		}
 	}

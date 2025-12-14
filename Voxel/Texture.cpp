@@ -86,7 +86,7 @@ void Texture::InitializeBlockTextures() {
     };
 }
 
-const BlockTextureSet& Texture::GetBlockTexture(uint8_t blockType) {
+const BlockTextureSet& Texture::GetBlockTexture(BlockType blockType) {
     return blockTextures[blockType];
 }
 

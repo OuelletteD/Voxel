@@ -5,9 +5,10 @@
 #include "Mesh.h"
 #include "string"
 #include <shared_mutex>
+#include "BlockType.h"
 
 struct Voxel {
-	int type;
+	BlockType type;
 	glm::ivec3 position;
 };
 

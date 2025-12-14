@@ -127,7 +127,7 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world, std::vector<Vert
 	// Texture coordinates
 	auto GetFaceUVs = [](const Voxel& voxel, int face, bool grass) -> const std::array<glm::vec2, 4>{
 		BlockTextureSet tileIndex = Texture::GetBlockTexture(voxel.type);
-		if(grass) tileIndex = Texture::GetBlockTexture(2);
+		if(grass) tileIndex = Texture::GetBlockTexture(BlockType::Grass);
 		switch (face) {
 			case 0: return tileIndex.top;
 			case 1: return tileIndex.bottom;
@@ -153,38 +153,36 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world, std::vector<Vert
 		}
 	}
 
-	auto IsVoxelSolidCached = [&](const glm::ivec3& pos, bool waterFalse = false) -> bool {
-		if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return false;
+	auto IsVoxelSolidCached = [&](const glm::ivec3& pos) -> BlockType {
+		if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return BlockType::Air;
 
 		ChunkPosition targetChunk = world.GetChunkPositionFromCoordinates(pos);
 		glm::ivec2 delta = glm::ivec2(targetChunk.x - chunk.chunkPosition.x,
 			targetChunk.z - chunk.chunkPosition.z);
 
-		if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
+		if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return BlockType::Air;
 
 		const std::shared_ptr<Chunk> chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
-		if (!chunk) return false;
+		if (!chunk) return BlockType::Air;
 
 		glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);
 		const Voxel* voxel = chunk->GetVoxel(localPos.x, localPos.y, localPos.z);
-		if (!voxel) return false;
-		if (waterFalse) {
-			return voxel->type != 0 && voxel->type != 4;
-		}
-		return voxel->type != 0;
+		if (!voxel) return BlockType::Air;
+		return voxel->type;
 	};
 	
 	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
 		for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
 			for (int z = 0; z < Config::CHUNK_SIZE; z++) {
 				const Voxel& voxel = chunk.voxels[x][y][z];
-				if (voxel.type == 0) continue;
+				if (voxel.type == BlockType::Air) continue;
 				bool isSurface = false;
 				glm::ivec3 posInChunk = { x,y,z };
 				for (int face = 0; face < 6; ++face) {
 					glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
 					bool grass = false;
-					if (!IsVoxelSolidCached(neighborPos)) {
+					int neighborType = IsVoxelSolidCached(neighborPos);
+					if (neighborType == BlockType::Air || neighborType == BlockType::Water) {
 						isSurface = true;
 						break;
 					}
@@ -208,20 +206,21 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world, std::vector<Vert
 			continue;
 		}
 		const Voxel& voxel = chunk.voxels[posInChunk.x][posInChunk.y][posInChunk.z];
-		if (voxel.type == 4) {
+		if (voxel.type == BlockType::Water) {
 			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[0];
-			if (IsVoxelSolidCached(neighborPos)) {
+			if (IsVoxelSolidCached(neighborPos) != BlockType::Air) {
 				continue;
 			}
 			AddWaterSurfaceQuad(posInChunk, waterV, waterI, waterIndexOffset);
 			continue;
 		}
-		if (voxel.type == 0) continue;
+		if (voxel.type == BlockType::Air) continue;
 		bool grass = false;
 		for (int face = 0; face < 6; ++face) {
 			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
-			if (IsVoxelSolidCached(neighborPos, true)) continue;
-			if (face == 0 && voxel.type == 1) {
+			int neighborType = IsVoxelSolidCached(neighborPos);
+			if (neighborType != BlockType::Air && neighborType != BlockType::Water) continue;
+			if (face == 0 && voxel.type == BlockType::Dirt && neighborType != BlockType::Water) {
 				grass = true;
 			}
 			const glm::vec3 voxelCenter = glm::vec3(posInChunk) + glm::vec3(0.5f);
