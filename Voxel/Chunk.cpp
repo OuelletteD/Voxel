@@ -41,7 +41,7 @@ void Chunk::Generate() {
 						voxels[x][y][z].type = BlockType::Stone; // stone
 					}
 					else {
-						voxels[x][y][z].type = BlockType::Grass; // grass
+						voxels[x][y][z].type = BlockType::Dirt; // grass
 					}
 				}
 				else if (y >= height - dirtDepth && cliffFactor <= 0.75f) {

@@ -225,30 +225,17 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world, std::vector<Vert
 			}
 			const glm::vec3 voxelCenter = glm::vec3(posInChunk) + glm::vec3(0.5f);
 			const std::array<glm::vec2, 4> faceUVs = GetFaceUVs(voxel, face, grass);
-			for (int i = 0; i < 4; ++i) {
-				Vertex v;
-				v.position = faceOffsets[face][i] + voxelCenter;
-				v.texCoord = faceUVs[i];
+			std::array<glm::vec4, 4> lights;
 
-				if(Config::AO_ENABLED == true){
+			if (Config::AO_ENABLED) {
+				for (int i = 0; i < 4; ++i) {
 					float ao = calculateAOFactor(face, i, voxel.position, IsVoxelSolidCached);
-					v.light = glm::vec4(ao, ao, ao, 1.0f);
-				} else {
-					//No lighting
-					v.light = glm::vec4(1.0f);
+					lights[i] = glm::vec4(ao, ao, ao, 1.0f);
 				}
-
-				solidV.push_back(v);
+			}else {
+				lights.fill(glm::vec4(1.0f));
 			}
-			// Add indices for two triangles
-			solidI.push_back(indexOffset + 0);
-			solidI.push_back(indexOffset + 1);
-			solidI.push_back(indexOffset + 2);
-
-			solidI.push_back(indexOffset + 2);
-			solidI.push_back(indexOffset + 3);
-			solidI.push_back(indexOffset + 0);
-			indexOffset += 4;
+			AddQuad(voxelCenter, face, faceUVs, lights, solidV, solidI, indexOffset);
 		}
 	}
 }
@@ -257,22 +244,27 @@ void Renderer::AddWaterSurfaceQuad(const glm::ivec3& voxelPos, std::vector<Verte
 	glm::vec3 center = glm::vec3(voxelPos) + glm::vec3(0.5f, 0.0f, 0.5f);
 
 	std::array<glm::vec2, 4> waterUVs = texture.GetTileUVs(13, 0);
+	std::array<glm::vec4, 4> waterLights;
+	waterLights.fill(glm::vec4(1.0f));
+	AddQuad(center, 0, waterUVs, waterLights, waterVertices, waterIndices, indexOffset);
+}
 
+void Renderer::AddQuad(const glm::vec3& center, int face, const std::array<glm::vec2, 4>& uvs, const std::array<glm::vec4, 4>& lights, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, unsigned int& indexOffset) {
 	for (int i = 0; i < 4; i++) {
 		Vertex v;
-		v.position = center + faceOffsets[0][i];
-		v.texCoord = waterUVs[i];
-		v.light = glm::vec4(1.0f);
-		waterVertices.push_back(v);
+		v.position = center + faceOffsets[face][i];
+		v.texCoord = uvs[i];
+		v.light = lights[i];
+		vertices.push_back(v);
 	}
 
-	waterIndices.push_back(indexOffset + 0);
-	waterIndices.push_back(indexOffset + 1);
-	waterIndices.push_back(indexOffset + 2);
+	indices.push_back(indexOffset + 0);
+	indices.push_back(indexOffset + 1);
+	indices.push_back(indexOffset + 2);
 
-	waterIndices.push_back(indexOffset + 2);
-	waterIndices.push_back(indexOffset + 3);
-	waterIndices.push_back(indexOffset + 0);
+	indices.push_back(indexOffset + 2);
+	indices.push_back(indexOffset + 3);
+	indices.push_back(indexOffset + 0);
 
 	indexOffset += 4;
 }
