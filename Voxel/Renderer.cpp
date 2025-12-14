@@ -34,8 +34,14 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 
 	if (chunkStatus != Ready && chunkStatus != Rerendering){
 		if (chunkStatus == NewChunkRendering) return; //In async, waiting for return.
-		ChunkPosition pos = chunk.chunkPosition;
-		std::shared_ptr<Chunk> chunkPtr = world.chunks.at(pos);
+		std::shared_ptr<Chunk> chunkPtr;
+		{
+			std::unique_lock lock(world.chunkMutex);
+			auto it = world.chunks.find(chunk.chunkPosition);
+			if (it == world.chunks.end()) return;
+			chunkPtr = it->second;
+		}
+		
 		if (!world.rendered) {
 			std::vector<Vertex> solidV, waterV;
 			std::vector<unsigned int> solidI, waterI;
@@ -46,16 +52,17 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 				chunkPtr->waterMesh.mesh.SwapCPUData(waterV, waterI);
 			}
 			chunkPtr->waterMesh.mesh.Upload();
-			chunkPtr->chunkMesh.needsMeshUpdate = false;
-			chunkPtr->chunkMesh.isUpdating = false;
+
+			chunkPtr->chunkMesh.dirty.store(false, std::memory_order_relaxed);
+			chunkPtr->chunkMesh.queued.store(false, std::memory_order_relaxed);
 			chunkPtr->chunkMesh.isNewChunk = false;
-		} else {
-			if (chunkStatus == NewChunk) {
-				RerenderSurroundingChunks(chunk, world);
-			}
-			if (chunkPtr->chunkMesh.isUpdating == false) {
-				UpdateChunkMeshAsync(chunkPtr, world);
-			}
+			return;
+		}
+		if (chunkStatus == NewChunk) {
+			RerenderSurroundingChunks(chunk, world);
+		}
+		if (chunkPtr->chunkMesh.dirty.load(std::memory_order_acquire)) {
+			MarkChunkDirty(*chunkPtr, world);
 		}
 		if(chunkStatus != WaitingForRerender) return; //No available mesh yet.
 	}
@@ -91,7 +98,9 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 	} else {
 		glUniform1i(loc, 0);
 	}
-	chunk.chunkMesh.mesh.Render();
+	if (!chunk.chunkMesh.mesh.IsEmpty()) {
+		chunk.chunkMesh.mesh.Render();
+	}
 	if (!chunk.waterMesh.mesh.IsEmpty()) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -279,8 +288,10 @@ void Renderer::RenderWorld(World& world) {
 
 void Renderer::UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World& world) {
 	// Enqueue the CPU heavy mesh build on thread pool
-	chunkPtr->chunkMesh.isUpdating = true;
+	chunkPtr->chunkMesh.queued.store(true, std::memory_order_relaxed);
 	threadPool.enqueue([this, chunkPtr, &world]() {
+		chunkPtr->chunkMesh.building.store(true, std::memory_order_release);
+		chunkPtr->chunkMesh.dirty.store(false, std::memory_order_release);
 		std::vector<Vertex> solidV, waterV;
 		std::vector<unsigned int> solidI, waterI;
 		BuildChunkMesh(*chunkPtr, world, solidV, waterV, solidI, waterI);
@@ -288,7 +299,7 @@ void Renderer::UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World
 		auto siLocal = std::move(solidI);
 		auto wvLocal = std::move(waterV);
 		auto wiLocal = std::move(waterI);
-		mtd.Enqueue([chunkPtr, sv = std::move(svLocal), si = std::move(siLocal), wv = std::move(wvLocal), wi = std::move(wiLocal)]() mutable { //Pass to main thread
+		mtd.Enqueue([this, chunkPtr, &world, sv = std::move(svLocal), si = std::move(siLocal), wv = std::move(wvLocal), wi = std::move(wiLocal)]() mutable { //Pass to main thread
 			if (!sv.empty() && !si.empty()) {
 				chunkPtr->chunkMesh.mesh.SwapCPUData(sv, si);
 			}
@@ -299,9 +310,13 @@ void Renderer::UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World
 			chunkPtr->chunkMesh.mesh.Upload();
 			chunkPtr->waterMesh.mesh.Upload();
 			
-			chunkPtr->chunkMesh.needsMeshUpdate = false;
-			chunkPtr->chunkMesh.isUpdating = false;
+			
+			chunkPtr->chunkMesh.building.store(false, std::memory_order_release);
+			chunkPtr->chunkMesh.queued.store(false, std::memory_order_release);
 			chunkPtr->chunkMesh.isNewChunk = false;
+			if (chunkPtr->chunkMesh.dirty.load(std::memory_order_acquire)) {
+				this->MarkChunkDirty(*chunkPtr, world);
+			}
 		});
 	});
 }
@@ -311,16 +326,26 @@ void Renderer::RerenderSurroundingChunks(Chunk& chunk, const World& world) {
 		for (int z = -1; z < 2; z++) {
 			if (x == 0 && z == 0) continue;
 			ChunkPosition chunkPosition = chunk.chunkPosition + ChunkPosition{x, z};
-			std::unique_lock lock(world.chunkMutex);
-			auto it = world.chunks.find(chunkPosition);
-			if (it != world.chunks.end()) {
-				Chunk& neighborChunk = *(it->second);
-				ChunkStatus neighborStatus = GetChunkStatus(neighborChunk);
-				if (neighborStatus == Ready || neighborStatus == Rerendering) {
-					neighborChunk.chunkMesh.needsMeshUpdate = true;
-				}
+			std::shared_ptr<Chunk> neighborChunkPtr;
+			{
+				std::unique_lock lock(world.chunkMutex);
+				auto it = world.chunks.find(chunkPosition);
+				if (it == world.chunks.end()) continue;
+				neighborChunkPtr = it->second;
+			}
+			ChunkStatus neighborStatus = GetChunkStatus(*neighborChunkPtr);
+			if (neighborStatus == Ready || neighborStatus == Rerendering) {
+				MarkChunkDirty(*neighborChunkPtr, world);
 			}
 		}
+	}
+}
+
+void Renderer::MarkChunkDirty(Chunk& chunk, const World& world) {
+	chunk.chunkMesh.dirty.store(true, std::memory_order_relaxed);
+	bool expected = false;
+	if (chunk.chunkMesh.queued.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+		UpdateChunkMeshAsync(chunk.shared_from_this(), world);
 	}
 }
 

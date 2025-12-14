@@ -3,7 +3,9 @@
 
 namespace Config {
 	constexpr int CHUNK_SIZE = 16;
-	constexpr int CHUNK_HEIGHT = 128;
+	constexpr int CHUNK_HEIGHT = 256;
+	constexpr int TERRAINHEIGHTMAX = 100;
+	constexpr int TERRAINBASEHEIGHT = 10;
 	constexpr int PIXELS_PER_TEXTURE = 16;
 	constexpr float GRAVITY = 9.81f;
 	constexpr int SQRT_CHUNKS_TO_CREATE = 13;

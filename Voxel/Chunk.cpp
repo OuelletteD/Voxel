@@ -1,25 +1,25 @@
-#include "Chunk.h"
+﻿#include "Chunk.h"
 #include <string>
 #include <iostream>
 void Chunk::Generate() {
+	const int paddedSize = Config::CHUNK_SIZE + 2;
+	int paddedHeight[paddedSize][paddedSize];
 	int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
 	float slopeMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
-	const int terrainheightRange = 75;
-	const int terrainBaseHeight = 10;
 	const int seaLevel = 20;
-	const int rockLine = terrainBaseHeight + terrainheightRange * 0.85f;
+	const int rockLine = Config::TERRAINBASEHEIGHT + Config::TERRAINHEIGHTMAX * 0.85f;
 	const int baseDirtDepth = 4;
-	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
-		for (int z = 0; z < Config::CHUNK_SIZE; z++) {
-			slopeMap[x][z] = 0.0f; //> Cliff factor can't be checked at the border of a chunk.?
-			int worldX = x + (Config::CHUNK_SIZE * chunkPosition.x);
-			int worldZ = z + (Config::CHUNK_SIZE * chunkPosition.z);
-			heightMap[x][z] = GetHeightAt(worldX, worldZ);
+	for (int x = 0; x < paddedSize; x++) {
+		for (int z = 0; z < paddedSize; z++) {
+			int worldX = (x - 1) + (Config::CHUNK_SIZE * chunkPosition.x);
+			int worldZ = (z - 1) + (Config::CHUNK_SIZE * chunkPosition.z);
+			paddedHeight[x][z] = GetHeightAt(worldX, worldZ);
 		}
 	}
-	for (int x = 1; x < Config::CHUNK_SIZE -1; x++) {
-		for (int z = 1; z < Config::CHUNK_SIZE -1; z++) {
-			slopeMap[x][z] = CalculateSlopeFromMap(x, z, heightMap);
+	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
+		for (int z = 0; z < Config::CHUNK_SIZE; z++) {
+			heightMap[x][z] = paddedHeight[x + 1][z + 1];
+			slopeMap[x][z] = CalculateSlopeFromMap(x, z, paddedHeight);
 		}
 	}
 	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
@@ -33,7 +33,13 @@ void Chunk::Generate() {
 			int dirtDepth = int(glm::mix(baseDirtDepth, 1, cliffFactor));
 			bool highAltitudeRock = height >= rockLine;
 			for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
-				if (y > height) {
+				if (y == 0 || y == 1) {
+					voxels[x][y][z].type = BlockType::Bedrock;
+				}
+				else if (y == 2) {
+					voxels[x][y][z].type = BlockType::Dirt;
+				}
+				else if (y > height) {
 					voxels[x][y][z].type = BlockType::Air; // air
 				}
 				else if (y == height) {
@@ -50,7 +56,6 @@ void Chunk::Generate() {
 				else {
 					voxels[x][y][z].type = BlockType::Stone; // stone
 				}
-
 				voxels[x][y][z].position = glm::ivec3(worldX, y, worldZ);
 			}
 		}
@@ -61,6 +66,7 @@ void Chunk::Generate() {
 			int worldX = x + (Config::CHUNK_SIZE * chunkPosition.x);
 			int worldZ = z + (Config::CHUNK_SIZE * chunkPosition.z);
 			for (int y = terrainHeight + 1; y <= seaLevel; y++) {
+				if (y < 3) continue;
 				voxels[x][y][z].type = BlockType::Water; //water
 			}
 		}
@@ -68,50 +74,73 @@ void Chunk::Generate() {
 }
 
 int Chunk::GetHeightAt(int x, int z) {
-	const int terrainheightRange = 75;
-	const int terrainBaseHeight = 10;
-	//float amp = amplitude;
-	float macro = CreatePerlinPoint(x, z, 0.00015f, 2);
-	macro = pow(macro, 1.8f);
-	
-	float continent = CreatePerlinPoint(x, z, 0.0005f, 3);
-	float hills = CreatePerlinPoint(x, z, 0.005f, 4);
-	float detail = CreatePerlinPoint(x, z, 0.02f, 2);
-	
-	float noiseValue = continent * 0.6f + hills * 0.3f + detail * 0.1f;
-	float flatMask = glm::smoothstep(0.25f, 0.45f, noiseValue);
-	noiseValue -= detail * (1.0f - flatMask);
+	// Base terrain parameters
 
-	float hillShape = pow(hills, 1.8f);
-	hillShape = hillShape * 2.0f - 1.0f;
+	// Macro biome layer
+	float macro = CreatePerlinPoint(x, z, 0.00015f, 2); // Large-scale variation across the world
+	// Params: frequency = 0.00015f (very low = broad regions), octaves = 2 (smooth)
+	// Controls “biome” type or large zones of flat vs hilly terrain
+	macro = pow(macro, 1.4f); // Non-linear shaping, amplifies high macro values → more hills/mountains
+	macro = glm::clamp(macro, 0.1f, 1.0f);
+	// Mid-scale terrain features
+	float continent = CreatePerlinPoint(x, z, 0.0005f, 3); // Large continent shape (low frequency)
+	float hills = CreatePerlinPoint(x, z, 0.005f, 4);      // Smaller hills (medium frequency)
+	float detail = CreatePerlinPoint(x, z, 0.02f, 2);      // Fine details, tiny bumps (high frequency)
+	hills *= macro; //Only apply significant hillls to high areas
+	// Blend terrain layers
+	float noiseValue = continent * 0.6f + hills * 0.3f + detail * 0.1f * macro; // Weighted sum
+	float flatMask = glm::smoothstep(0.25f, 0.45f, noiseValue);          // Smooth mask to flatten terrain in low-noise areas
+	noiseValue -= detail * (1.0f - flatMask); // Reduce small bumps in flat regions
 
-	float ridges = CreateRidgeNoise(x, z, 0.003f, 4);
-	float mountainMask = glm::smoothstep(0.6f, 0.85f, noiseValue); //Added to terrain at higher values
-	noiseValue += ridges * mountainMask * 0.5f;
+	// Hill shaping
+	float hillShape = pow(hills, 1.8f); // Amplify hills to make them steeper
+	hillShape = hillShape * 2.0f - 1.0f; // Re-center from [0,1] → [-1,1] to allow negative influence
 
+	// Ridges / mountains
+	float ridges = CreateRidgeNoise(x, z, 0.003f, 4); // Ridge pattern (low frequency)
+	// Params: frequency = 0.003f (controls width of ridges), octaves = 4 (detail in ridges)
+	float mountainMask = glm::smoothstep(0.6f, 0.85f, noiseValue); // Only apply ridges to higher terrain
+	noiseValue += ridges * mountainMask * 0.5f; // Blend ridge noise in with scaling
+
+	// Mountain chains
+	float chain = CreatePerlinPoint(x, z, 0.0002f, 2); // Chain pattern (macro-scale)
+	chain = pow(chain, 1.5f); // Exaggerates high points
+	noiseValue += chain * mountainMask * 0.3f; // Adds chain variation only to high terrain
+
+	// Shape & amplify terrain
 	float shaped = noiseValue;
-	shaped = glm::max(shaped, 0.0001f);
-	shaped = pow(shaped, 1.4f);
+	shaped = glm::max(shaped, 0.0001f);        // Avoid exact 0 (prevents degenerate calculations)
+	shaped = pow(shaped, 1.4f);                // Raise to a power to bias terrain heights
 	noiseValue = shaped;
-	noiseValue *= glm::mix(0.7f, 1.15f, macro);
+	noiseValue *= glm::mix(0.5f, 1.2f, macro); // Scale heights by macro biome
+	// macro low → flatter; macro high → taller / rougher terrain
 
-	float jitter = perlin.noise2D(x * 0.1f, z * 0.1f) * 0.15f;
-	noiseValue += jitter / terrainheightRange;
-	noiseValue = glm::clamp(noiseValue, 0.0f, 1.0f);
+	// Small jitter for tiny natural variation
+	float jitter = perlin.noise2D(x * 0.1f, z * 0.1f) * 0.15f; // Tiny high-frequency noise
+	noiseValue += jitter / Config::TERRAINHEIGHTMAX; // Add subtle bumps
+	noiseValue = glm::clamp(noiseValue, 0.0f, 1.0f); // Keep noise in [0,1]
+
+	// Erosion-like effect
 	float erosionMask = glm::smoothstep(0.18f, 0.65f, noiseValue) * (1.0f - glm::smoothstep(0.7f, 0.9f, noiseValue));
-	noiseValue = glm::mix(noiseValue, glm::smoothstep(0.0f, 1.0f, noiseValue), erosionMask * 0.25f); //errosion
-	noiseValue += hillShape * 0.12f; //Steeper hills
+	noiseValue = glm::mix(noiseValue, glm::smoothstep(0.0f, 1.0f, noiseValue), erosionMask * 0.25f);
+	// erosionMask controls where terrain is “smoothed” (lower slopes slightly flattened)
 
-	float peakMask = glm::smoothstep(0.75f, 0.95f, noiseValue);
-	noiseValue += peakMask * peakMask * 0.12f;
-	return int(noiseValue * terrainheightRange + terrainBaseHeight);
+	// Apply hill steepness
+	noiseValue += hillShape * 0.12f; // Steeper hills added back to terrain
+
+	// Peaks / mountain tops
+	float peakMask = glm::smoothstep(0.75f, 0.95f, noiseValue); // Only top terrain
+	noiseValue += peakMask * peakMask * 0.12f; // Extra height boost for peaks
+
+	
+	return int(noiseValue * Config::TERRAINHEIGHTMAX + Config::TERRAINBASEHEIGHT);
 }
 
-float Chunk::CalculateSlopeFromMap(int x, int z, int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE]) {
-	int hL = heightMap[x - 1][z];
-	int hR = heightMap[x + 1][z];
-	int hD = heightMap[x][z - 1];
-	int hU = heightMap[x][z + 1];
+float Chunk::CalculateSlopeFromMap(int x, int z, int paddedHeight[Config::CHUNK_SIZE + 2][Config::CHUNK_SIZE + 2]) {
+	int hL = paddedHeight[x + 0][z + 1];
+	int hR = paddedHeight[x + 2][z + 1];
+	int hD = paddedHeight[x + 1][z + 0];
+	int hU = paddedHeight[x + 1][z + 2];
 
 	float dx = abs(hR - hL);
 	float dz = abs(hU - hD);
