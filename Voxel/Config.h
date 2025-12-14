@@ -15,5 +15,5 @@ namespace Config {
 	constexpr bool TOGGLE_FLY = false;
 	constexpr float FOV = 70.0f;
 	constexpr int CHUNK_LOAD_RADIUS = 13;
-	inline siv::PerlinNoise::seed_type WOLRD_SEED; //Set in Voxel.cpp
+	inline siv::PerlinNoise::seed_type WORLD_SEED; //Set in Voxel.cpp
 }

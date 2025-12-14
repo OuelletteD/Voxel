@@ -3,19 +3,32 @@
 #include <glm/gtx/string_cast.hpp>
 #include "VoxelRaycaster.h"
 
-float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std::function<bool(glm::ivec3)> isSolidAt) {
+float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std::function<BlockType(glm::ivec3)> isSolidAt) {
     const AOOffsets& offsets = aoTable[faceIndex][cornerIndex];
 
 
     glm::ivec3 side1Pos = position + offsets.side1;
     glm::ivec3 side2Pos = position + offsets.side2;
     glm::ivec3 cornerPos = position + offsets.corner;
-    bool side1 = isSolidAt(side1Pos);
-    bool side2 = isSolidAt(side2Pos);
-    bool corner = isSolidAt(cornerPos);
-    if (side1 && side2) return 0.0f; // darkest
-    int occlusion = int(side1) + int(side2) + int(corner);
-    return 1.0f - occlusion * 0.333f; // linear AO
+    float side1 = returnOcclusionWeight((BlockType)isSolidAt(side1Pos));
+    float side2 = returnOcclusionWeight((BlockType)isSolidAt(side2Pos));
+    float corner = returnOcclusionWeight((BlockType)isSolidAt(cornerPos));
+    if (side1 >= 1.0f && side2 >= 1.0f) {
+        return 0.0f;
+    }
+    float occlusion = side1 + side2 + corner;
+    return glm::clamp(1.0f - occlusion * 0.333f, 0.0f, 1.0f);
+}
+
+float returnOcclusionWeight(BlockType type) {
+    switch (type) {
+        case BlockType::Air:
+            return 0.0f;
+        case BlockType::Water:
+            return 0.3f;
+        default:
+            return 1.0f;
+    }
 }
 
 bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3& min, const glm::vec3& max) {

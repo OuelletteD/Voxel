@@ -4,8 +4,9 @@
 void Chunk::Generate() {
 	int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
 	float slopeMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
-	const int terrainheightRange = 60;
+	const int terrainheightRange = 75;
 	const int terrainBaseHeight = 10;
+	const int seaLevel = 20;
 	const int rockLine = terrainBaseHeight + terrainheightRange * 0.85f;
 	const int baseDirtDepth = 4;
 	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
@@ -33,24 +34,34 @@ void Chunk::Generate() {
 			bool highAltitudeRock = height >= rockLine;
 			for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
 				if (y > height) {
-					voxels[x][y][z].type = 0; // air
+					voxels[x][y][z].type = BlockType::Air; // air
 				}
 				else if (y == height) {
 					if (highAltitudeRock || cliffFactor > 0.75f) {
-						voxels[x][y][z].type = 3; // stone
+						voxels[x][y][z].type = BlockType::Stone; // stone
 					}
 					else {
-						voxels[x][y][z].type = 1; // grass
+						voxels[x][y][z].type = BlockType::Dirt; // grass
 					}
 				}
 				else if (y >= height - dirtDepth && cliffFactor <= 0.75f) {
-					voxels[x][y][z].type = 1; // dirt
+					voxels[x][y][z].type = BlockType::Dirt; // dirt
 				}
 				else {
-					voxels[x][y][z].type = 3; // stone
+					voxels[x][y][z].type = BlockType::Stone; // stone
 				}
 
 				voxels[x][y][z].position = glm::ivec3(worldX, y, worldZ);
+			}
+		}
+	}
+	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
+		for (int z = 0; z < Config::CHUNK_SIZE; z++) {
+			int terrainHeight = heightMap[x][z];
+			int worldX = x + (Config::CHUNK_SIZE * chunkPosition.x);
+			int worldZ = z + (Config::CHUNK_SIZE * chunkPosition.z);
+			for (int y = terrainHeight + 1; y <= seaLevel; y++) {
+				voxels[x][y][z].type = BlockType::Water; //water
 			}
 		}
 	}

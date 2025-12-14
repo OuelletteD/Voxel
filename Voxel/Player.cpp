@@ -112,7 +112,7 @@ bool Player::CheckCollision() {
 	for (int x = xMin; x <= xMax; ++x) {
 		for (int y = yMin; y <= yMax; ++y) {
 			for (int z = zMin; z <= zMax; ++z) {
-				if (IsVoxelSolidCached(glm::ivec3(x, y, z))) {
+				if (IsVoxelSolidCached(glm::ivec3(x, y, z), true)) {
 					return true;
 				}
 			}
@@ -126,7 +126,7 @@ ChunkPosition Player::GetChunk() {
 }
 
 void Player::UpdateLocalChunks() {
-	std::array<const Chunk*, Config::CHUNK_SIZE* Config::CHUNK_SIZE> templocalChunkCache = { nullptr };
+	std::array<std::shared_ptr<Chunk>, Config::CHUNK_SIZE* Config::CHUNK_SIZE> templocalChunkCache = { nullptr };
 	
 	{
 		std::shared_lock lock(world.chunkMutex);
@@ -136,7 +136,7 @@ void Player::UpdateLocalChunks() {
 				ChunkPosition neighborPos = chunkPosition + ChunkPosition{ dx, dz };
 				auto it = world.chunks.find(neighborPos);
 				if (it != world.chunks.end()) {
-					templocalChunkCache[ChunkToIndex(dx, dz)] = it->second.get();
+					templocalChunkCache[ChunkToIndex(dx, dz)] = it->second;
 				}
 			}
 		}
@@ -147,19 +147,22 @@ void Player::UpdateLocalChunks() {
 	}
 }
 
-bool Player::IsVoxelSolidCached(const glm::ivec3& pos) const {
+bool Player::IsVoxelSolidCached(const glm::ivec3& pos, bool waterFalse) const {
 	if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return false;
 
 	ChunkPosition targetChunk = world.GetChunkPositionFromCoordinates(pos);
-	glm::ivec2 delta = glm::ivec2(targetChunk.x - chunkPosition.x,
-		targetChunk.z - chunkPosition.z);
+	glm::ivec2 delta = glm::ivec2(targetChunk.x - chunkPosition.x, targetChunk.z - chunkPosition.z);
 
 	if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
 
-	const Chunk* chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
+	const std::shared_ptr<Chunk> chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
 	if (!chunk) return false;
 
 	glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);
 	const Voxel* voxel = chunk->GetVoxel(localPos.x, localPos.y, localPos.z);
-	return voxel && voxel->type != 0;
+	if (!voxel) return false;
+	if (waterFalse) {
+		return voxel->type != 0 && voxel->type != 4;
+	}
+	return voxel->type != 0;
 };

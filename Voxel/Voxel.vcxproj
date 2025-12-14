@@ -182,6 +182,7 @@
     <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BlockType.h" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Controls.cpp" />

@@ -5,6 +5,7 @@
 #include <array>
 #include <unordered_map>
 #include "Config.h"
+#include "BlockType.h"
 
 struct BlockTextureSet {
 	std::array<glm::vec2, 4> top;
@@ -23,7 +24,7 @@ public:
 
 	static std::array<glm::vec2, 4> GetTileUVs(int tileX, int tileY, int tilesPerRow = Config::PIXELS_PER_TEXTURE, int tilesPerCol = Config::PIXELS_PER_TEXTURE);
 	static void InitializeBlockTextures();
-	static const BlockTextureSet& GetBlockTexture(uint8_t blockType);
+	static const BlockTextureSet& GetBlockTexture(BlockType blockType);
 
 private:
 	float tileSize = 1.0f / (float)Config::PIXELS_PER_TEXTURE;  // 0.0625f

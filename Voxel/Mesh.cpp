@@ -46,10 +46,14 @@ void Mesh::Render() {
     glBindVertexArray(0);
 }
 
-void Mesh::SetData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
-    localVertices = vertices;
-    localIndices = indices;
-    indexCount = static_cast<unsigned int>(indices.size());
+bool Mesh::IsEmpty() {
+    return localVertices.size() == 0 || localIndices.size() == 0;
+}
+
+void Mesh::SwapCPUData(std::vector<Vertex>& v, std::vector<unsigned int>& i) {
+    localVertices.swap(v);
+    localIndices.swap(i);
+    indexCount = static_cast<unsigned int>(localIndices.size());
 }
 
 void Mesh::Upload() {
@@ -67,6 +71,12 @@ void Mesh::Upload() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * localIndices.size(), localIndices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(0);
+}
+
+void Mesh::Clear() {
+    localVertices.clear();
+    localIndices.clear();
+    Cleanup();
 }
 
 void Mesh::Cleanup() {

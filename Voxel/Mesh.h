@@ -29,10 +29,11 @@ public:
 
 	bool Initialize(const Vertex* vertices, unsigned int vertexCount, const unsigned int* indices, unsigned int indexCount);
 	void Render();
+	void Clear();
 	void Cleanup();
-
-	void SetData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
+	bool IsEmpty();
 	void Upload();
+	void SwapCPUData(std::vector<Vertex>& v, std::vector<unsigned int>& i);
 };
 
 struct ChunkMesh {
