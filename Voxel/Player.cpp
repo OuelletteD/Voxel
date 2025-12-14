@@ -126,7 +126,7 @@ ChunkPosition Player::GetChunk() {
 }
 
 void Player::UpdateLocalChunks() {
-	std::array<const Chunk*, Config::CHUNK_SIZE* Config::CHUNK_SIZE> templocalChunkCache = { nullptr };
+	std::array<std::shared_ptr<Chunk>, Config::CHUNK_SIZE* Config::CHUNK_SIZE> templocalChunkCache = { nullptr };
 	
 	{
 		std::shared_lock lock(world.chunkMutex);
@@ -136,7 +136,7 @@ void Player::UpdateLocalChunks() {
 				ChunkPosition neighborPos = chunkPosition + ChunkPosition{ dx, dz };
 				auto it = world.chunks.find(neighborPos);
 				if (it != world.chunks.end()) {
-					templocalChunkCache[ChunkToIndex(dx, dz)] = it->second.get();
+					templocalChunkCache[ChunkToIndex(dx, dz)] = it->second;
 				}
 			}
 		}
@@ -156,7 +156,7 @@ bool Player::IsVoxelSolidCached(const glm::ivec3& pos) const {
 
 	if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
 
-	const Chunk* chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
+	const std::shared_ptr<Chunk> chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
 	if (!chunk) return false;
 
 	glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);

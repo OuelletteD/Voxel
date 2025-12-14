@@ -4,8 +4,9 @@
 void Chunk::Generate() {
 	int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
 	float slopeMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
-	const int terrainheightRange = 60;
+	const int terrainheightRange = 75;
 	const int terrainBaseHeight = 10;
+	const int seaLevel = 20;
 	const int rockLine = terrainBaseHeight + terrainheightRange * 0.85f;
 	const int baseDirtDepth = 4;
 	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
@@ -51,6 +52,16 @@ void Chunk::Generate() {
 				}
 
 				voxels[x][y][z].position = glm::ivec3(worldX, y, worldZ);
+			}
+		}
+	}
+	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
+		for (int z = 0; z < Config::CHUNK_SIZE; z++) {
+			int terrainHeight = heightMap[x][z];
+			int worldX = x + (Config::CHUNK_SIZE * chunkPosition.x);
+			int worldZ = z + (Config::CHUNK_SIZE * chunkPosition.z);
+			for (int y = terrainHeight + 1; y <= seaLevel; y++) {
+				voxels[x][y][z].type = 4; //water
 			}
 		}
 	}

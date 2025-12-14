@@ -1,4 +1,4 @@
-#include "Renderer.h"
+﻿#include "Renderer.h"
 #include "Debugger.h"
 #include "RenderingMath.h"
 #include <glm/gtc/type_ptr.hpp>        // For accessing matrix data as pointers
@@ -37,9 +37,15 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 		ChunkPosition pos = chunk.chunkPosition;
 		std::shared_ptr<Chunk> chunkPtr = world.chunks.at(pos);
 		if (!world.rendered) {
-			BuildChunkMesh(*chunkPtr, world);
-			
+			std::vector<Vertex> solidV, waterV;
+			std::vector<unsigned int> solidI, waterI;
+			BuildChunkMesh(*chunkPtr, world, solidV, waterV, solidI, waterI);
+			chunkPtr->chunkMesh.mesh.SwapCPUData(solidV, solidI);
 			chunkPtr->chunkMesh.mesh.Upload();
+			if (!waterV.empty() && !waterI.empty()) {
+				chunkPtr->waterMesh.mesh.SwapCPUData(waterV, waterI);
+			}
+			chunkPtr->waterMesh.mesh.Upload();
 			chunkPtr->chunkMesh.needsMeshUpdate = false;
 			chunkPtr->chunkMesh.isUpdating = false;
 			chunkPtr->chunkMesh.isNewChunk = false;
@@ -47,8 +53,9 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 			if (chunkStatus == NewChunk) {
 				RerenderSurroundingChunks(chunk, world);
 			}
-			chunkPtr->chunkMesh.isUpdating = true;
-			UpdateChunkMeshAsync(chunkPtr, world);
+			if (chunkPtr->chunkMesh.isUpdating == false) {
+				UpdateChunkMeshAsync(chunkPtr, world);
+			}
 		}
 		if(chunkStatus != WaitingForRerender) return; //No available mesh yet.
 	}
@@ -80,17 +87,40 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 	shader.Use();
 	GLint loc = shader.GetUniformLocation("atlas");
 	if (loc == -1) {
-		ErrorLogger::LogError("Uniform 'atlas' not found!");
+		ErrorLogger::LogError("Uniform 'atlas' not found in chunk shader!");
 	} else {
 		glUniform1i(loc, 0);
 	}
 	chunk.chunkMesh.mesh.Render();
+	if (!chunk.waterMesh.mesh.IsEmpty()) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		shader.Use();
+		GLint waterAatlasLoc = shader.GetUniformLocation("atlas");
+		if (waterAatlasLoc == -1) {
+			ErrorLogger::LogError("Uniform 'atlas' not found in water shader!");
+		}
+		else {
+			glActiveTexture(GL_TEXTURE0);
+			texture.Bind(0);
+			glUniform1i(waterAatlasLoc, 0);
+		}
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, constantBuffer);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), glm::value_ptr(projection));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		chunk.waterMesh.mesh.Render();
+
+		glDisable(GL_BLEND);
+	}
 }
 
-void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-	std::array<const Chunk*, 3 * 3> localChunkCache = { nullptr };
+void Renderer::BuildChunkMesh(Chunk& chunk, const World& world, std::vector<Vertex>& solidV, std::vector<Vertex>& waterV, std::vector<unsigned int>& solidI, std::vector<unsigned int>& waterI) {
+	std::array<std::shared_ptr<Chunk>, 3 * 3> localChunkCache = { nullptr };
 	unsigned int indexOffset = 0;
 	chunk.surfaceVoxels.clear();
 	chunk.surfaceVoxelGlobalPositions.clear();
@@ -117,13 +147,13 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 				ChunkPosition neighborPos = chunk.chunkPosition + ChunkPosition{ dx, dz };
 				auto it = world.chunks.find(neighborPos);
 				if (it != world.chunks.end()) {
-					localChunkCache[ChunkToIndex(dx, dz)] = it->second.get();
+					localChunkCache[ChunkToIndex(dx, dz)] = it->second;
 				}
 			}
 		}
 	}
 
-	auto IsVoxelSolidCached = [&](const glm::ivec3& pos) -> bool {
+	auto IsVoxelSolidCached = [&](const glm::ivec3& pos, bool waterFalse = false) -> bool {
 		if (pos.y < 0 || pos.y >= Config::CHUNK_HEIGHT) return false;
 
 		ChunkPosition targetChunk = world.GetChunkPositionFromCoordinates(pos);
@@ -132,15 +162,17 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 
 		if (std::abs(delta.x) > 1 || std::abs(delta.y) > 1) return false;
 
-		const Chunk* chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
+		const std::shared_ptr<Chunk> chunk = localChunkCache[ChunkToIndex(delta.x, delta.y)];
 		if (!chunk) return false;
 
 		glm::ivec3 localPos = world.ConvertPositionToPositionInsideChunk(pos);
 		const Voxel* voxel = chunk->GetVoxel(localPos.x, localPos.y, localPos.z);
-		return voxel && voxel->type != 0;
+		if (!voxel) return false;
+		if (waterFalse) {
+			return voxel->type != 0 && voxel->type != 4;
+		}
+		return voxel->type != 0;
 	};
-
-
 	
 	for (int x = 0; x < Config::CHUNK_SIZE; x++) {
 		for (int y = 0; y < Config::CHUNK_HEIGHT; y++) {
@@ -159,21 +191,36 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 				}
 				if (isSurface) {
 					glm::ivec3 globalVoxelPosition = { x + chunk.chunkPosition.x * Config::CHUNK_SIZE, y, z + chunk.chunkPosition.z * Config::CHUNK_SIZE };
+					std::lock_guard<std::mutex> lock(chunk.meshMutex);
 					chunk.surfaceVoxels.push_back(posInChunk);
 					chunk.surfaceVoxelGlobalPositions.push_back(globalVoxelPosition);
 				}		
 			}
 		}
 	}
+	unsigned int waterIndexOffset = 0;
+	chunk.waterMesh.mesh.localVertices.clear();
+	chunk.waterMesh.mesh.localIndices.clear();
 	std::unordered_map<glm::ivec3, bool, ivec3_hash> lightingMap;
-
+	std::lock_guard<std::mutex> lock(chunk.meshMutex);
 	for (const glm::ivec3& posInChunk : chunk.surfaceVoxels) {
+		if (posInChunk.y < 0 || posInChunk.y >= Config::CHUNK_HEIGHT) {
+			continue;
+		}
 		const Voxel& voxel = chunk.voxels[posInChunk.x][posInChunk.y][posInChunk.z];
+		if (voxel.type == 4) {
+			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[0];
+			if (IsVoxelSolidCached(neighborPos)) {
+				continue;
+			}
+			AddWaterSurfaceQuad(posInChunk, waterV, waterI, waterIndexOffset);
+			continue;
+		}
 		if (voxel.type == 0) continue;
 		bool grass = false;
 		for (int face = 0; face < 6; ++face) {
 			glm::ivec3 neighborPos = (chunk.chunkPosition * Config::CHUNK_SIZE) + posInChunk + faceDirections[face];
-			if (IsVoxelSolidCached(neighborPos)) continue;
+			if (IsVoxelSolidCached(neighborPos, true)) continue;
 			if (face == 0 && voxel.type == 1) {
 				grass = true;
 			}
@@ -192,21 +239,43 @@ void Renderer::BuildChunkMesh(Chunk& chunk, const World& world) {
 					v.light = glm::vec4(1.0f);
 				}
 
-				vertices.push_back(v);
+				solidV.push_back(v);
 			}
 			// Add indices for two triangles
-			indices.push_back(indexOffset + 0);
-			indices.push_back(indexOffset + 1);
-			indices.push_back(indexOffset + 2);
+			solidI.push_back(indexOffset + 0);
+			solidI.push_back(indexOffset + 1);
+			solidI.push_back(indexOffset + 2);
 
-			indices.push_back(indexOffset + 2);
-			indices.push_back(indexOffset + 3);
-			indices.push_back(indexOffset + 0);
+			solidI.push_back(indexOffset + 2);
+			solidI.push_back(indexOffset + 3);
+			solidI.push_back(indexOffset + 0);
 			indexOffset += 4;
 		}
 	}
+}
 
-	chunk.chunkMesh.mesh.SetData(vertices, indices);
+void Renderer::AddWaterSurfaceQuad(const glm::ivec3& voxelPos, std::vector<Vertex>& waterVertices, std::vector<unsigned int>& waterIndices, unsigned int& indexOffset) {
+	glm::vec3 center = glm::vec3(voxelPos) + glm::vec3(0.5f, 0.0f, 0.5f);
+
+	std::array<glm::vec2, 4> waterUVs = texture.GetTileUVs(13, 0);
+
+	for (int i = 0; i < 4; i++) {
+		Vertex v;
+		v.position = center + faceOffsets[0][i];
+		v.texCoord = waterUVs[i];
+		v.light = glm::vec4(1.0f);
+		waterVertices.push_back(v);
+	}
+
+	waterIndices.push_back(indexOffset + 0);
+	waterIndices.push_back(indexOffset + 1);
+	waterIndices.push_back(indexOffset + 2);
+
+	waterIndices.push_back(indexOffset + 2);
+	waterIndices.push_back(indexOffset + 3);
+	waterIndices.push_back(indexOffset + 0);
+
+	indexOffset += 4;
 }
 
 void Renderer::RenderWorld(World& world) {
@@ -218,12 +287,27 @@ void Renderer::RenderWorld(World& world) {
 }
 
 void Renderer::UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World& world) {
-
 	// Enqueue the CPU heavy mesh build on thread pool
+	chunkPtr->chunkMesh.isUpdating = true;
 	threadPool.enqueue([this, chunkPtr, &world]() {
-		BuildChunkMesh(*chunkPtr, world);
-		mtd.Enqueue([chunkPtr]() { //Pass to main thread
-			chunkPtr->chunkMesh.mesh.Upload();			
+		std::vector<Vertex> solidV, waterV;
+		std::vector<unsigned int> solidI, waterI;
+		BuildChunkMesh(*chunkPtr, world, solidV, waterV, solidI, waterI);
+		auto svLocal = std::move(solidV);
+		auto siLocal = std::move(solidI);
+		auto wvLocal = std::move(waterV);
+		auto wiLocal = std::move(waterI);
+		mtd.Enqueue([chunkPtr, sv = std::move(svLocal), si = std::move(siLocal), wv = std::move(wvLocal), wi = std::move(wiLocal)]() mutable { //Pass to main thread
+			if (!sv.empty() && !si.empty()) {
+				chunkPtr->chunkMesh.mesh.SwapCPUData(sv, si);
+			}
+			
+			if (!wv.empty() && !wi.empty()) {
+				chunkPtr->waterMesh.mesh.SwapCPUData(wv, wi);
+			}
+			chunkPtr->chunkMesh.mesh.Upload();
+			chunkPtr->waterMesh.mesh.Upload();
+			
 			chunkPtr->chunkMesh.needsMeshUpdate = false;
 			chunkPtr->chunkMesh.isUpdating = false;
 			chunkPtr->chunkMesh.isNewChunk = false;

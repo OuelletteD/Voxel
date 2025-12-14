@@ -4,6 +4,7 @@
 #include "PerlinNoise.hpp"
 #include "Mesh.h"
 #include "string"
+#include <shared_mutex>
 
 struct Voxel {
 	int type;
@@ -51,7 +52,7 @@ struct ivec3_hash {
 
 class Chunk {
 public:
-	Chunk() : perlin(Config::WOLRD_SEED) {}
+	Chunk() : perlin(Config::WORLD_SEED) {}
 	Chunk(const Chunk&) = delete;
 	Chunk& operator=(const Chunk&) = delete;
 
@@ -62,6 +63,8 @@ public:
 	Voxel voxels[Config::CHUNK_SIZE][Config::CHUNK_HEIGHT][Config::CHUNK_SIZE];
 	ChunkPosition chunkPosition;
 	ChunkMesh chunkMesh;
+	ChunkMesh waterMesh;
+	std::mutex meshMutex;
 
 	void Generate();
 	const Voxel* GetVoxel(int x, int y, int z) const;
@@ -69,7 +72,7 @@ public:
 	int exampleData = 0;
 	std::vector<glm::ivec3> surfaceVoxels;
 	std::vector<glm::ivec3> surfaceVoxelGlobalPositions;
-	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
+	const siv::PerlinNoise perlin{ Config::WORLD_SEED };
 	
 private:
 	float CreatePerlinPoint(int x, int z, float frequency, int amplitude);

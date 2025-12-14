@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
     SetupDebugCallback();
 
     srand(time(0));
-    Config::WOLRD_SEED = Config::DEBUG_MODE ? 1000 : (rand() % 1000);
+    Config::WORLD_SEED = Config::DEBUG_MODE ? 1000 : (rand() % 1000);
     renderer.Initialize();
     glfwSetCursorPos(window, Config::SCREEN_WIDTH / 2, Config::SCREEN_HEIGHT / 2);
     controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
