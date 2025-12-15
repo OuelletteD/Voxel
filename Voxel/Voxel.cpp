@@ -41,13 +41,17 @@ void mouse(GLFWwindow* window, double x, double y) {
 void UpdateDeltaTime() {
     currentTime = glfwGetTime();
     deltaTime = currentTime - lastTime;
-    if (Config::SHOW_FPS) {
-        frameCount++;
-        if (currentTime - lastFPSUpdate >= 1.0) {
-            printf("FPS: %d\n", frameCount);  
-            frameCount = 0;
-            lastFPSUpdate = currentTime;
+    frameCount++;
+    if (currentTime - lastFPSUpdate >= 1.0) {
+        if (Config::SHOW_FPS) {
+            printf("FPS: %d\n", frameCount);              
         }
+        if (Config::SHOW_POSITION) {
+            glm::vec3 position = player.GetPosition();
+            printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
+        }
+        lastFPSUpdate = currentTime;
+        frameCount = 0;
     }
     lastTime = currentTime;
 }

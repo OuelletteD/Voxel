@@ -16,6 +16,7 @@ public:
 	void RenderWorld(World& world);
 	void AddWaterSurfaceQuad(const glm::ivec3& voxelPos, std::vector<Vertex>& waterVertices, std::vector<unsigned int>& waterIndices, unsigned int& indexOffset);
 	void AddQuad(const glm::vec3& center, int face, const std::array<glm::vec2, 4>& uvs, const std::array<glm::vec4, 4>& lights, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, unsigned int& indexOffset);
+	void MarkChunkDirty(Chunk& chunk, const World& world);
 	void Cleanup();
 	void SetControls(Controls* c);
 	void UpdateChunkMeshAsync(std::shared_ptr<Chunk> chunkPtr, const World& world);

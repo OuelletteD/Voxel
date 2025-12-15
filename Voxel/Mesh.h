@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>        // Core GLM functionality
 #include <vector>
+#include <atomic>
 
 struct Vertex {
 	glm::vec3 position;
@@ -38,8 +39,9 @@ public:
 
 struct ChunkMesh {
 	Mesh mesh;
-	bool needsMeshUpdate = true;
-	bool isUpdating = false;
+	std::atomic_bool dirty = true;
+	std::atomic_bool queued = false;
+	std::atomic_bool building = false;
 	bool isNewChunk = true;
 	ChunkMesh() = default;
 

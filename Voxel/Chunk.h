@@ -51,7 +51,7 @@ struct ivec3_hash {
 	}
 };
 
-class Chunk {
+class Chunk : public std::enable_shared_from_this<Chunk> {
 public:
 	Chunk() : perlin(Config::WORLD_SEED) {}
 	Chunk(const Chunk&) = delete;
@@ -81,5 +81,5 @@ private:
 	const float amplitude = 0.004;
 	const int octaves = 6;
 	int GetHeightAt(int x, int z);
-	float CalculateSlopeFromMap(int x, int z, int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE]);
+	float CalculateSlopeFromMap(int x, int z, int paddedHeight[Config::CHUNK_SIZE + 2][Config::CHUNK_SIZE + 2]);
 };

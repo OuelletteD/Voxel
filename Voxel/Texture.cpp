@@ -84,6 +84,11 @@ void Texture::InitializeBlockTextures() {
         GetTileUVs(1,0),
         GetTileUVs(1,0)
     };
+    blockTextures[5] = {
+        GetTileUVs(1,1),
+        GetTileUVs(1,1),
+        GetTileUVs(1,1)
+    };
 }
 
 const BlockTextureSet& Texture::GetBlockTexture(BlockType blockType) {
