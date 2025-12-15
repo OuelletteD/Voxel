@@ -4,8 +4,9 @@
 namespace Config {
 	constexpr int CHUNK_SIZE = 16;
 	constexpr int CHUNK_HEIGHT = 256;
-	constexpr int TERRAINHEIGHTMAX = 100;
+	constexpr int TERRAINHEIGHTMAX = 150;
 	constexpr int TERRAINBASEHEIGHT = 10;
+	constexpr int SEALEVEL = 40;
 	constexpr int PIXELS_PER_TEXTURE = 16;
 	constexpr float GRAVITY = 9.81f;
 	constexpr int SQRT_CHUNKS_TO_CREATE = 13;
@@ -13,6 +14,7 @@ namespace Config {
 	constexpr int SCREEN_WIDTH = 2560;
 	constexpr int SCREEN_HEIGHT = 1440;
 	constexpr bool SHOW_FPS = true;
+	constexpr bool SHOW_POSITION = true;
 	constexpr bool AO_ENABLED = true;
 	constexpr bool TOGGLE_FLY = false;
 	constexpr float FOV = 70.0f;

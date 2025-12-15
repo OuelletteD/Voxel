@@ -6,7 +6,6 @@ void Chunk::Generate() {
 	int paddedHeight[paddedSize][paddedSize];
 	int heightMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
 	float slopeMap[Config::CHUNK_SIZE][Config::CHUNK_SIZE];
-	const int seaLevel = 20;
 	const int rockLine = Config::TERRAINBASEHEIGHT + Config::TERRAINHEIGHTMAX * 0.85f;
 	const int baseDirtDepth = 4;
 	for (int x = 0; x < paddedSize; x++) {
@@ -36,9 +35,6 @@ void Chunk::Generate() {
 				if (y == 0 || y == 1) {
 					voxels[x][y][z].type = BlockType::Bedrock;
 				}
-				else if (y == 2) {
-					voxels[x][y][z].type = BlockType::Dirt;
-				}
 				else if (y > height) {
 					voxels[x][y][z].type = BlockType::Air; // air
 				}
@@ -65,8 +61,8 @@ void Chunk::Generate() {
 			int terrainHeight = heightMap[x][z];
 			int worldX = x + (Config::CHUNK_SIZE * chunkPosition.x);
 			int worldZ = z + (Config::CHUNK_SIZE * chunkPosition.z);
-			for (int y = terrainHeight + 1; y <= seaLevel; y++) {
-				if (y < 3) continue;
+			for (int y = terrainHeight + 1; y <= Config::SEALEVEL; y++) {
+				//if (y < 3) continue;
 				voxels[x][y][z].type = BlockType::Water; //water
 			}
 		}
@@ -74,8 +70,6 @@ void Chunk::Generate() {
 }
 
 int Chunk::GetHeightAt(int x, int z) {
-	// Base terrain parameters
-
 	// Macro biome layer
 	float macro = CreatePerlinPoint(x, z, 0.00015f, 2); // Large-scale variation across the world
 	// Params: frequency = 0.00015f (very low = broad regions), octaves = 2 (smooth)
@@ -88,7 +82,7 @@ int Chunk::GetHeightAt(int x, int z) {
 	float detail = CreatePerlinPoint(x, z, 0.02f, 2);      // Fine details, tiny bumps (high frequency)
 	hills *= macro; //Only apply significant hillls to high areas
 	// Blend terrain layers
-	float noiseValue = continent * 0.6f + hills * 0.3f + detail * 0.1f * macro; // Weighted sum
+	float noiseValue = continent * 0.6f + hills * 0.3f + detail * 0.1f; // Weighted sum
 	float flatMask = glm::smoothstep(0.25f, 0.45f, noiseValue);          // Smooth mask to flatten terrain in low-noise areas
 	noiseValue -= detail * (1.0f - flatMask); // Reduce small bumps in flat regions
 
@@ -99,7 +93,7 @@ int Chunk::GetHeightAt(int x, int z) {
 	// Ridges / mountains
 	float ridges = CreateRidgeNoise(x, z, 0.003f, 4); // Ridge pattern (low frequency)
 	// Params: frequency = 0.003f (controls width of ridges), octaves = 4 (detail in ridges)
-	float mountainMask = glm::smoothstep(0.6f, 0.85f, noiseValue); // Only apply ridges to higher terrain
+	float mountainMask = glm::smoothstep(0.7f, 0.85f, noiseValue); // Only apply ridges to higher terrain
 	noiseValue += ridges * mountainMask * 0.5f; // Blend ridge noise in with scaling
 
 	// Mountain chains
@@ -128,11 +122,35 @@ int Chunk::GetHeightAt(int x, int z) {
 	// Apply hill steepness
 	noiseValue += hillShape * 0.12f; // Steeper hills added back to terrain
 
-	// Peaks / mountain tops
+	// Peaks / mountain tops 
 	float peakMask = glm::smoothstep(0.75f, 0.95f, noiseValue); // Only top terrain
 	noiseValue += peakMask * peakMask * 0.12f; // Extra height boost for peaks
 
-	
+
+
+	// Define sea level normalized to [0..1]
+	const float seaLevelNorm = (float)Config::SEALEVEL/(float)Config::TERRAINHEIGHTMAX;  // same as your sea level relative to terrainheightRange
+
+	if (noiseValue < seaLevelNorm) {
+		float t = noiseValue / seaLevelNorm; // normalized [0..1] for ocean region
+
+		// Generate ocean floor noise layers with slightly different frequencies
+		float oceanNoise1 = CreatePerlinPoint(x, z, 0.0001f, 2);
+		float oceanNoise2 = CreatePerlinPoint(x, z, 0.00025f, 3);
+
+		// Blend ocean noises with different weights for variation
+		float oceanNoise = oceanNoise1 * 0.7f + oceanNoise2 * 0.3f;
+
+		// Amplify variation for ocean floor (tuned amplitude)
+		float oceanVariation = glm::smoothstep(0.0f, 1.0f, oceanNoise) * 0.1f * (1.0f - t);
+
+		// Use pow for non-linear interpolation (deeper near bottom, smoother near sea level)
+		float blendFactor = pow(1.0f - t, 2.0f);
+
+		// Final ocean floor height combines base and ocean noise
+		noiseValue = std::fabs(t * seaLevelNorm + oceanVariation * seaLevelNorm * blendFactor);
+	}
+	int a = int(noiseValue * Config::TERRAINHEIGHTMAX + Config::TERRAINBASEHEIGHT);
 	return int(noiseValue * Config::TERRAINHEIGHTMAX + Config::TERRAINBASEHEIGHT);
 }
 
