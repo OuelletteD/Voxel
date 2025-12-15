@@ -18,5 +18,5 @@ extern glm::vec3 faceOffsets[6][4];
 extern AOOffsets aoTable[6][4];
 
 float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std::function<BlockType(glm::ivec3)> isSolidAt);
-bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3& min, const glm::vec3& max);
+bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3 chunkPosition);
 float returnOcclusionWeight(BlockType type);

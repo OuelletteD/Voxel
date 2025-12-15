@@ -14,12 +14,16 @@ bool Renderer::Initialize() {
 	texture.Bind(0);
 	auto uvs = Texture::GetTileUVs(0, 1);
 	
-	if (!shader.Initialize("VertexShader.glsl", "FragmentShader.glsl")) {
+	if ((!shader.Initialize("VertexShader.glsl", "FragmentShader.glsl"))  || (!waterShader.Initialize("VertexShader.glsl", "WaterShader.glsl"))) {
 		ErrorLogger::LogError("Failed to initialize shaders!");
 		return false;
 	}
+
 	shader.Use();
 	shader.SetInt("atlas", 0);
+	waterShader.Use();
+	waterShader.SetInt("atlas", 0);
+	waterShader.SetFloat("uAlpha", 0.6f);
 
 	// Create a uniform buffer object (UBO) for storing matrices (model, view, projection)
 	glGenBuffers(1, &constantBuffer);
@@ -29,7 +33,7 @@ bool Renderer::Initialize() {
 	return true;
 }
 
-void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Plane,6>& cameraPlanes) {
+void Renderer::UpdateChunk(Chunk& chunk, const World& world, const std::array<Plane,6>& cameraPlanes) {
 	enum ChunkStatus chunkStatus = GetChunkStatus(chunk);
 
 	if (chunkStatus != Ready && chunkStatus != Rerendering){
@@ -66,66 +70,48 @@ void Renderer::RenderChunk(Chunk& chunk, const World& world, const std::array<Pl
 		}
 		if(chunkStatus != WaitingForRerender) return; //No available mesh yet.
 	}
-	glm::vec3 worldChunkPosition = {
-		chunk.chunkPosition.x * Config::CHUNK_SIZE,
-		0.0f,
-		chunk.chunkPosition.z * Config::CHUNK_SIZE
-	};
-	glm::vec3 minBound = worldChunkPosition;
-	glm::vec3 maxBound = glm::vec3(worldChunkPosition.x + Config::CHUNK_SIZE, Config::CHUNK_HEIGHT, worldChunkPosition.z + Config::CHUNK_SIZE);
-	if (!IsChunkInFrustum(cameraPlanes, minBound, maxBound)) {
+}
+
+void Renderer::RenderChunkMesh(Chunk& chunk, const World& world, const std::array<Plane, 6>& cameraPlanes, bool transparentLayer) {
+	glm::vec3 worldChunkPosition = { chunk.chunkPosition.x * Config::CHUNK_SIZE,0.0f,chunk.chunkPosition.z * Config::CHUNK_SIZE };
+	if (!IsChunkInFrustum(cameraPlanes, worldChunkPosition)) {
 		return;
 	}
 
 	// Create a model matrix for the voxel (positioned correctly in world space)
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), worldChunkPosition);
-	glm::mat4 projection = camera.GetProjectionMatrix();
-	glm::mat4 view = camera.GetViewMatrix();
+	UpdateMatricesUBO(model, camera.GetViewMatrix(), camera.GetProjectionMatrix());
 
 	glActiveTexture(GL_TEXTURE0);
 	texture.Bind(0);
-	
+
+	Mesh* mesh = transparentLayer ? &chunk.waterMesh.mesh : &chunk.chunkMesh.mesh;
+	Shader* activeShader = transparentLayer ? &waterShader : &shader;
+
+	if (mesh->IsEmpty()) return;
+
+	if (transparentLayer) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(GL_FALSE);
+	}
+
+	activeShader->Use();
+	mesh->Render();
+
+	if (transparentLayer) {
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+	}
+}
+
+void Renderer::UpdateMatricesUBO(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection) {
 	// Pass the model matrix to the shader
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, constantBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
 	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), glm::value_ptr(projection));
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	shader.Use();
-	GLint loc = shader.GetUniformLocation("atlas");
-	if (loc == -1) {
-		ErrorLogger::LogError("Uniform 'atlas' not found in chunk shader!");
-	} else {
-		glUniform1i(loc, 0);
-	}
-	if (!chunk.chunkMesh.mesh.IsEmpty()) {
-		chunk.chunkMesh.mesh.Render();
-	}
-	if (!chunk.waterMesh.mesh.IsEmpty()) {
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		shader.Use();
-		GLint waterAatlasLoc = shader.GetUniformLocation("atlas");
-		if (waterAatlasLoc == -1) {
-			ErrorLogger::LogError("Uniform 'atlas' not found in water shader!");
-		}
-		else {
-			glActiveTexture(GL_TEXTURE0);
-			texture.Bind(0);
-			glUniform1i(waterAatlasLoc, 0);
-		}
-
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, constantBuffer);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(model));
-		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), glm::value_ptr(projection));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-		chunk.waterMesh.mesh.Render();
-
-		glDisable(GL_BLEND);
-	}
 }
 
 void Renderer::BuildChunkMesh(Chunk& chunk, const World& world, std::vector<Vertex>& solidV, std::vector<Vertex>& waterV, std::vector<unsigned int>& solidI, std::vector<unsigned int>& waterI) {
@@ -280,9 +266,9 @@ void Renderer::AddQuad(const glm::vec3& center, int face, const std::array<glm::
 
 void Renderer::RenderWorld(World& world) {
 	std::array<Plane, 6> cameraPlanes = camera.ExtractFrustumPlanes();
-	for (auto& [chunkPos, chunk] : world.chunks) {
-		RenderChunk(*chunk, world, cameraPlanes);
-	}
+	for (auto& [chunkPos, chunk] : world.chunks) UpdateChunk(*chunk, world, cameraPlanes);
+	for (auto& [chunkPos, chunk] : world.chunks) RenderChunkMesh(*chunk, world, cameraPlanes, false);
+	for (auto& [chunkPos, chunk] : world.chunks) RenderChunkMesh(*chunk, world, cameraPlanes, true);
 	if (!world.rendered) world.rendered = true;
 }
 
