@@ -18,18 +18,20 @@ struct MouseDelta {
 
 class Controls {
 public:
+	void Initialize(GLFWwindow* window);
 	void ProcessKeyboard(GLFWwindow* window, double deltaTime);
 	void ProcessMouse(double xpos, double ypos);
 	void ProcessMouseMovement(double xoffset, double yoffset);
 	MouseDelta GetMouseDelta();
-	void SetInitialMousePosition(float xpos, float ypos);
+	void SetInitialMousePosition(double xpos, double ypos);
 	MovementInput GetMovementInput();
+	static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
 	MovementInput input;
 	MouseDelta mouseDelta;
-	float lastX;
-	float lastY;
+	double lastX;
+	double lastY;
 	bool firstMouse;
 
 	float mouseSensitivity = 0.03;
