@@ -1,5 +1,5 @@
 #include "ErrorLogger.h"
-#include <GL/glew.h>
+#include <glad/glad.h>
 
 void ErrorLogger::Log(std::string message) {
 	std::cerr << message << std::endl;

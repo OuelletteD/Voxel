@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "Shader.h"
 #include "Renderer.h"
@@ -88,9 +88,9 @@ void CheckChunkGenerationRequired() {
 
 int main(int argc, char** argv) {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(Config::SCREEN_WIDTH, Config::SCREEN_HEIGHT, "Voxel Renderer", nullptr, nullptr);
     if (!window) {
@@ -99,10 +99,25 @@ int main(int argc, char** argv) {
         return -1;
     }
     glfwMakeContextCurrent(window);
+    // Load GL functions
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glewInit();
+
     glEnable(GL_DEPTH_TEST);
     SetupDebugCallback();
+
+    GLint maxTextureUnits;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+    std::cout << "Max texture units: " << maxTextureUnits << std::endl;
+
+    GLint maxVertexAttribs;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
+    std::cout << "Max vertex attributes: " << maxVertexAttribs << std::endl;
+
+
 
     srand(time(0));
     Config::WOLRD_SEED = Config::DEBUG_MODE ? 1000 : (rand() % 1000);
