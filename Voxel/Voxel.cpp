@@ -109,16 +109,6 @@ int main(int argc, char** argv) {
     glEnable(GL_DEPTH_TEST);
     SetupDebugCallback();
 
-    GLint maxTextureUnits;
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-    std::cout << "Max texture units: " << maxTextureUnits << std::endl;
-
-    GLint maxVertexAttribs;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
-    std::cout << "Max vertex attributes: " << maxVertexAttribs << std::endl;
-
-
-
     srand(time(0));
     Config::WOLRD_SEED = Config::DEBUG_MODE ? 1000 : (rand() % 1000);
     renderer.Initialize();
