@@ -4,9 +4,11 @@
 #include "PerlinNoise.hpp"
 #include "Mesh.h"
 #include "string"
+#include <shared_mutex>
+#include "BlockType.h"
 
 struct Voxel {
-	int type;
+	BlockType type;
 	glm::ivec3 position;
 };
 
@@ -49,9 +51,9 @@ struct ivec3_hash {
 	}
 };
 
-class Chunk {
+class Chunk : public std::enable_shared_from_this<Chunk> {
 public:
-	Chunk() : perlin(Config::WOLRD_SEED) {}
+	Chunk() : perlin(Config::WORLD_SEED) {}
 	Chunk(const Chunk&) = delete;
 	Chunk& operator=(const Chunk&) = delete;
 
@@ -62,6 +64,8 @@ public:
 	Voxel voxels[Config::CHUNK_SIZE][Config::CHUNK_HEIGHT][Config::CHUNK_SIZE];
 	ChunkPosition chunkPosition;
 	ChunkMesh chunkMesh;
+	ChunkMesh waterMesh;
+	std::mutex meshMutex;
 
 	void Generate();
 	const Voxel* GetVoxel(int x, int y, int z) const;
@@ -69,13 +73,13 @@ public:
 	int exampleData = 0;
 	std::vector<glm::ivec3> surfaceVoxels;
 	std::vector<glm::ivec3> surfaceVoxelGlobalPositions;
-	const siv::PerlinNoise perlin{ Config::WOLRD_SEED };
+	const siv::PerlinNoise perlin{ Config::WORLD_SEED };
 	
 private:
-	float CreatePerlinPoint(int x, int z);
-
+	float CreatePerlinPoint(int x, int z, float frequency, int amplitude);
+	float CreateRidgeNoise(float x, float z, float frequency, int octaves);
 	const float amplitude = 0.004;
 	const int octaves = 6;
 	int GetHeightAt(int x, int z);
-	float CalculateSlope(int x, int z);
+	float CalculateSlopeFromMap(int x, int z, int paddedHeight[Config::CHUNK_SIZE + 2][Config::CHUNK_SIZE + 2]);
 };

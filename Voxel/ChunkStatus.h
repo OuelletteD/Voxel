@@ -11,10 +11,11 @@ enum ChunkStatus {
 };
 
 ChunkStatus GetChunkStatus(const Chunk& chunk) {
-	if (!chunk.chunkMesh.needsMeshUpdate) 
+	const auto& mesh = chunk.chunkMesh;
+	if (!mesh.dirty.load(std::memory_order_acquire)) {
 		return ChunkStatus::Ready; // it should continue
-
-	if (chunk.chunkMesh.isUpdating) {
+	}
+	if (mesh.queued.load(std::memory_order_acquire)) {
 		if (chunk.chunkMesh.isNewChunk) {
 			return ChunkStatus::NewChunkRendering;
 		} else {

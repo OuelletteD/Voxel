@@ -3,27 +3,42 @@
 #include <glm/gtx/string_cast.hpp>
 #include "VoxelRaycaster.h"
 
-float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std::function<bool(glm::ivec3)> isSolidAt) {
+float calculateAOFactor(int faceIndex, int cornerIndex, glm::ivec3 position, std::function<BlockType(glm::ivec3)> isSolidAt) {
     const AOOffsets& offsets = aoTable[faceIndex][cornerIndex];
 
 
     glm::ivec3 side1Pos = position + offsets.side1;
     glm::ivec3 side2Pos = position + offsets.side2;
     glm::ivec3 cornerPos = position + offsets.corner;
-    bool side1 = isSolidAt(side1Pos);
-    bool side2 = isSolidAt(side2Pos);
-    bool corner = isSolidAt(cornerPos);
-    if (side1 && side2) return 0.0f; // darkest
-    int occlusion = int(side1) + int(side2) + int(corner);
-    return 1.0f - occlusion * 0.333f; // linear AO
+    float side1 = returnOcclusionWeight((BlockType)isSolidAt(side1Pos));
+    float side2 = returnOcclusionWeight((BlockType)isSolidAt(side2Pos));
+    float corner = returnOcclusionWeight((BlockType)isSolidAt(cornerPos));
+    if (side1 >= 1.0f && side2 >= 1.0f) {
+        return 0.0f;
+    }
+    float occlusion = side1 + side2 + corner;
+    return glm::clamp(1.0f - occlusion * 0.333f, 0.0f, 1.0f);
 }
 
-bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3& min, const glm::vec3& max) {
+float returnOcclusionWeight(BlockType type) {
+    switch (type) {
+        case BlockType::Air:
+            return 0.0f;
+        case BlockType::Water:
+            return 0.4f;
+        default:
+            return 1.0f;
+    }
+}
+
+bool IsChunkInFrustum(const std::array<Plane, 6>& planes, const glm::vec3 chunkPosition) {
+    glm::vec3 minBound = chunkPosition;
+    glm::vec3 maxBound = glm::vec3(chunkPosition.x + Config::CHUNK_SIZE, Config::CHUNK_HEIGHT, chunkPosition.z + Config::CHUNK_SIZE);
     for (const Plane& plane : planes) {
-        glm::vec3 p = min;
-        if (plane.normal.x >= 0) p.x = max.x;
-        if (plane.normal.y >= 0) p.y = max.y;
-        if (plane.normal.z >= 0) p.z = max.z;
+        glm::vec3 p = minBound;
+        if (plane.normal.x >= 0) p.x = maxBound.x;
+        if (plane.normal.y >= 0) p.y = maxBound.y;
+        if (plane.normal.z >= 0) p.z = maxBound.z;
 
         if (plane.DistanceToPoint(p) < 0) {
             return false;

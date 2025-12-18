@@ -41,13 +41,17 @@ void mouse(GLFWwindow* window, double x, double y) {
 void UpdateDeltaTime() {
     currentTime = glfwGetTime();
     deltaTime = currentTime - lastTime;
-    if (Config::SHOW_FPS) {
-        frameCount++;
-        if (currentTime - lastFPSUpdate >= 1.0) {
-            printf("FPS: %d\n", frameCount);  
-            frameCount = 0;
-            lastFPSUpdate = currentTime;
+    frameCount++;
+    if (currentTime - lastFPSUpdate >= 1.0) {
+        if (Config::SHOW_FPS) {
+            printf("FPS: %d\n", frameCount);              
         }
+        if (Config::SHOW_POSITION) {
+            glm::vec3 position = player.GetPosition();
+            printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
+        }
+        lastFPSUpdate = currentTime;
+        frameCount = 0;
     }
     lastTime = currentTime;
 }
@@ -110,10 +114,10 @@ int main(int argc, char** argv) {
     SetupDebugCallback();
 
     srand(time(0));
-    Config::WOLRD_SEED = Config::DEBUG_MODE ? 1000 : (rand() % 1000);
+    Config::WORLD_SEED = Config::DEBUG_MODE ? 1000 : (rand() % 1000);
     renderer.Initialize();
     glfwSetCursorPos(window, Config::SCREEN_WIDTH / 2, Config::SCREEN_HEIGHT / 2);
-    controls.SetInitialMousePosition(Config::SCREEN_WIDTH / 2.0f, Config::SCREEN_HEIGHT / 2.0f);
+    controls.Initialize(window);
     glfwSetCursorPosCallback(window, mouse);
     world.Generate(Config::SQRT_CHUNKS_TO_CREATE);
     world.FinalizeChunkBatch();

@@ -17,6 +17,7 @@ public:
 	void Cleanup();  // Cleanup the shaders and program
 	GLuint GetProgram() const;  // Add the GetProgram function
 	void SetInt(const std::string& name, int value);
+	void SetFloat(const std::string& name, float value);
 	GLint GetUniformLocation(const std::string& name);
 private:
 	bool CompileShader(const std::string& filePath, GLenum shaderType, GLuint& shader);

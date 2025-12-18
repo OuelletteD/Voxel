@@ -32,6 +32,10 @@ void Shader::SetInt(const std::string& name, int value) {
     GLint location = GetUniformLocation(name);
     glUniform1i(location, value);
 }
+void Shader::SetFloat(const std::string& name, float value) {
+    GLint location = GetUniformLocation(name);
+    glUniform1f(location, value);
+}
 
 GLint Shader::GetUniformLocation(const std::string& name) {
     if (uniformLocations.count(name)) {
@@ -76,6 +80,7 @@ bool Shader::CompileShader(const std::string& filePath, GLenum shaderType, GLuin
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
         char* infoLog = new char[logLength];
         glGetShaderInfoLog(shader, logLength, &logLength, infoLog);
+        ErrorLogger::LogError(infoLog);
         ErrorLogger::LogError("Shader compilation failed");
         delete[] infoLog;
         return false;

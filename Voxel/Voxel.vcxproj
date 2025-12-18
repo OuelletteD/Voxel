@@ -190,6 +190,7 @@
     <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BlockType.h" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Controls.cpp" />
@@ -218,6 +219,7 @@
     <None Include="packages.config" />
     <None Include="ThreadPool.inl" />
     <None Include="Voxel.aps" />
+    <None Include="WaterShader.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="FragmentShader.glsl">
